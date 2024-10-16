@@ -1,7 +1,7 @@
 // Default values for configurable constants
 let config = {
   WHISPER_URL: "http://localhost:8000/whisperaudio",
-  WHISPER_API_KEY: "",
+  WHISPER_API_KEY: "your_api_key",
   AI_SCRIBE_URL: "http://localhost:1337/v1/chat/completions",
   AI_SCRIBE_MODEL: "gemma-2-2b-it",
   AI_SCRIBE_CONTEXT_BEFORE:
@@ -9,19 +9,23 @@ let config = {
   AI_SCRIBE_CONTEXT_AFTER:
     "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
 };
+
 let mediaRecorder;
+let mediaRecorderInterval;
 let audioChunks = [];
 let audioContext;
+let socket;
 let audioInputSelect = document.getElementById("audioInputSelect");
 let recordButton = document.getElementById("recordButton");
 let stopButton = document.getElementById("stopButton");
+let userInput = document.getElementById("userInput");
+let soapNotesElement = document.getElementById("soapNotes");
 
 let deviceCounter = 0;
 
 let tabStream;
 
-// Toggle configuration visibility
-document.getElementById("toggleConfig").addEventListener("click", function () {
+function toggleConfigView() {
   const configSection = document.getElementById("configSection");
   if (
     configSection.style.display === "none" ||
@@ -33,7 +37,12 @@ document.getElementById("toggleConfig").addEventListener("click", function () {
     configSection.style.display = "none";
     this.textContent = "Show Configuration";
   }
-});
+}
+
+// Toggle configuration visibility
+document
+  .getElementById("toggleConfig")
+  .addEventListener("click", toggleConfigView);
 
 // Load configuration from storage
 chrome.storage.sync.get(["config"], function (result) {
@@ -67,11 +76,13 @@ const isValidUrl = (url) => {
 // Save configuration
 document.getElementById("saveConfig").addEventListener("click", function () {
   let whisperUrl = document.getElementById("whisperUrl").value;
-  let whisperApiKey = document.getElementById("whisperApiKey").value;
+
   if (!isValidUrl(whisperUrl)) {
     alert("Invalid Whisper URL");
     return;
   }
+
+  let whisperApiKey = document.getElementById("whisperApiKey").value;
 
   let aiScribeUrl = document.getElementById("aiScribeUrl").value;
 
@@ -98,6 +109,7 @@ document.getElementById("saveConfig").addEventListener("click", function () {
   chrome.storage.sync.set({ config: config }, function () {
     console.log("Configuration saved");
     alert("Configuration saved successfully!");
+    toggleConfigView();
   });
 });
 
@@ -134,6 +146,7 @@ recordButton.addEventListener("click", () => {
   let constraints = { audio: true };
 
   audioChunks = [];
+  userInput.value = "";
 
   // If the selected value starts with "audioinput_", it's our generated ID
   if (!audioInputSelect.value.startsWith("audioinput_")) {
@@ -172,30 +185,27 @@ recordButton.addEventListener("click", () => {
           const combinedStream = destination.stream;
 
           mediaRecorder = new MediaRecorder(combinedStream);
+
           mediaRecorder.ondataavailable = (event) => {
             audioChunks.push(event.data);
           };
+
           mediaRecorder.onstop = () => {
             let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-            let audioUrl = URL.createObjectURL(audioBlob);
-            let audio = new Audio(audioUrl);
 
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl);
-            };
-
-            // NOTE: If needed, uncomment the following line to play the audio
-            // audio.play();
-
-            // send audio to whisper server
             convertAudioToText(audioBlob).then((result) => {
               updateGUI(result.text);
             });
           };
+
           mediaRecorder.start();
+          mediaRecorderInterval = setInterval(() => {
+            mediaRecorder.stop();
+            mediaRecorder.start();
+          }, 5 * 1000);
+
           recordButton.disabled = true;
           stopButton.disabled = false;
-          // Disable select elements
           audioInputSelect.disabled = true;
         }
       );
@@ -206,6 +216,9 @@ recordButton.addEventListener("click", () => {
 });
 
 stopButton.addEventListener("click", () => {
+  if (mediaRecorderInterval) {
+    clearInterval(mediaRecorderInterval);
+  }
   mediaRecorder.stop();
   if (tabStream) {
     tabStream.getTracks().forEach((track) => track.stop());
@@ -215,7 +228,6 @@ stopButton.addEventListener("click", () => {
   }
   recordButton.disabled = false;
   stopButton.disabled = true;
-  // Re-enable select elements
   audioInputSelect.disabled = false;
 });
 
@@ -225,7 +237,7 @@ async function convertAudioToText(audioBlob) {
   formData.append("audio", audioBlob, "audio.wav");
 
   const headers = {
-    "X-API-Key": config.WHISPER_API_KEY,
+    Authorization: "Bearer " + config.WHISPER_API_KEY,
   };
 
   try {
@@ -250,10 +262,7 @@ async function convertAudioToText(audioBlob) {
 }
 
 function updateGUI(text) {
-  // Update your GUI with the transcribed text
-  // This might involve updating a DOM element
-  const userInput = document.getElementById("userInput");
-  userInput.value += text + "\n";
+  userInput.value += text;
   userInput.scrollTop = userInput.scrollHeight;
 }
 
@@ -262,13 +271,12 @@ let generateSoapButton = document.getElementById("generateSoapButton");
 
 // Add this event listener at the end of your file
 generateSoapButton.addEventListener("click", () => {
-  const transcribedText = document.getElementById("userInput").value;
+  const transcribedText = userInput.value;
   if (transcribedText.trim() === "") {
     alert("Please record some audio first.");
     return;
   }
 
-  // Call a function to generate SOAP notes
   generateSoapNotes(transcribedText);
 });
 
@@ -319,15 +327,9 @@ async function generateSoapNotes(text) {
 
     const result = await response.json();
     const soapNotes = result.choices[0].message.content;
-    displaySoapNotes(soapNotes);
+    soapNotesElement.textContent = soapNotes;
   } catch (error) {
     console.error("Error generating SOAP notes:", error);
     alert("Error generating SOAP notes. Please try again.");
   }
-}
-
-// Display SOAP notes
-function displaySoapNotes(soapNotes) {
-  const soapNotesElement = document.getElementById("soapNotes");
-  soapNotesElement.textContent = soapNotes;
 }
