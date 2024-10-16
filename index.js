@@ -14,7 +14,6 @@ let mediaRecorder;
 let mediaRecorderInterval;
 let audioChunks = [];
 let audioContext;
-let socket;
 let audioInputSelect = document.getElementById("audioInputSelect");
 let recordButton = document.getElementById("recordButton");
 let stopButton = document.getElementById("stopButton");
