@@ -8,6 +8,8 @@ let config = {
     "AI, please transform the following conversation into a concise SOAP note. Do not assume any medical data, vital signs, or lab values. Base the note strictly on the information provided in the conversation. Ensure that the SOAP note is structured appropriately with Subjective, Objective, Assessment, and Plan sections. Strictly extract facts from the conversation. Here's the conversation:",
   AI_SCRIBE_CONTEXT_AFTER:
     "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
+  REALTIME: false,
+  REALTIME_RECODING_LENGTH: 5,
 };
 
 let mediaRecorder;
@@ -61,6 +63,7 @@ function updateConfigInputs() {
     config.AI_SCRIBE_CONTEXT_BEFORE;
   document.getElementById("aiScribeContextAfter").value =
     config.AI_SCRIBE_CONTEXT_AFTER;
+  document.getElementById("realtimeToggle").checked = config.REALTIME;
 }
 
 const isValidUrl = (url) => {
@@ -98,12 +101,15 @@ document.getElementById("saveConfig").addEventListener("click", function () {
     "aiScribeContextAfter"
   ).value;
 
+  let realtime = document.getElementById("realtimeToggle").checked;
+
   config.WHISPER_URL = whisperUrl;
   config.WHISPER_API_KEY = whisperApiKey;
   config.AI_SCRIBE_URL = aiScribeUrl;
   config.AI_SCRIBE_MODEL = aiScribeModel;
   config.AI_SCRIBE_CONTEXT_BEFORE = aiScribeContextBefore;
   config.AI_SCRIBE_CONTEXT_AFTER = aiScribeContextAfter;
+  config.REALTIME = realtime;
 
   chrome.storage.sync.set({ config: config }, function () {
     console.log("Configuration saved");
@@ -198,10 +204,13 @@ recordButton.addEventListener("click", () => {
           };
 
           mediaRecorder.start();
-          mediaRecorderInterval = setInterval(() => {
-            mediaRecorder.stop();
-            mediaRecorder.start();
-          }, 5 * 1000);
+
+          if (config.REALTIME) {
+            mediaRecorderInterval = setInterval(() => {
+              mediaRecorder.stop();
+              mediaRecorder.start();
+            }, config.REALTIME_RECODING_LENGTH * 1000);
+          }
 
           recordButton.disabled = true;
           stopButton.disabled = false;
