@@ -6,8 +6,26 @@ chrome.runtime.onInstalled.addListener((details) => {
     url: chrome.runtime.getURL("welcome.html"),
     active: true,
   });
+
+  // Create context menu item
+  chrome.contextMenus.create({
+    id: "freescribeCopilot",
+    title: "Start Freescribe Copilot",
+    contexts: ["page", "selection"],
+  });
 });
 
+function openSidePanel(windowId) {
+  chrome.sidePanel.open({ windowId: windowId });
+}
+
 chrome.action.onClicked.addListener((tab) => {
-  chrome.sidePanel.open({ windowId: tab.windowId });
+  openSidePanel(tab.windowId);
+});
+
+// Handle context menu item click
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "freescribeCopilot") {
+    openSidePanel(tab.windowId);
+  }
 });
