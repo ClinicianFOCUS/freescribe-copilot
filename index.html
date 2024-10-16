@@ -23,54 +23,10 @@
         width: 100%;
         text-wrap: wrap;
       }
-      .config-item {
-        margin-bottom: 10px;
-      }
-      .config-item label {
-        display: block;
-        margin-bottom: 5px;
-      }
-      #configSection {
-        display: none;
-      }
     </style>
   </head>
   <body>
-    <button id="toggleConfig">Show/Hide Configuration</button>
-    <div id="configSection">
-      <h3>Configuration</h3>
-      <div class="config-item">
-        <label for="whisperUrl">Whisper Server URL:</label>
-        <input type="text" id="whisperUrl" />
-      </div>
-      <div class="config-item">
-        <label for="whisperApiKey">Whisper API Key:</label>
-        <input type="text" id="whisperApiKey" />
-      </div>
-      <div class="config-item">
-        <label for="aiScribeUrl">AI Scribe URL:</label>
-        <input type="text" id="aiScribeUrl" />
-      </div>
-      <div class="config-item">
-        <label for="aiScribeModel">AI Scribe Model:</label>
-        <input type="text" id="aiScribeModel" />
-      </div>
-      <div class="config-item">
-        <label for="aiScribeContextBefore">AI Scribe Context Before:</label>
-        <textarea id="aiScribeContextBefore" rows="3"></textarea>
-      </div>
-      <div class="config-item">
-        <label for="aiScribeContextAfter">AI Scribe Context After:</label>
-        <textarea id="aiScribeContextAfter" rows="3"></textarea>
-      </div>
-      <div class="config-item">
-        <label for="realtimeToggle">
-          Enable Real-time Processing
-          <input type="checkbox" id="realtimeToggle" />
-        </label>
-      </div>
-      <button id="saveConfig">Save Configuration</button>
-    </div>
+    <button id="toggleConfig">Show Configuration</button>
 
     <h3>Select Audio Input Device</h3>
     <select id="audioInputSelect"></select>
@@ -79,6 +35,6 @@
     <textarea id="userInput" rows="10"></textarea>
     <button id="generateSoapButton">Generate SOAP Notes</button>
     <pre id="soapNotes"></pre>
-    <script src="index.js"></script>
+    <script type="module" src="index.js"></script>
   </body>
 </html>

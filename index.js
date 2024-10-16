@@ -1,17 +1,7 @@
-// Default values for configurable constants
-let config = {
-  WHISPER_URL: "http://localhost:8000/whisperaudio",
-  WHISPER_API_KEY: "your_api_key",
-  AI_SCRIBE_URL: "http://localhost:1337/v1/chat/completions",
-  AI_SCRIBE_MODEL: "gemma-2-2b-it",
-  AI_SCRIBE_CONTEXT_BEFORE:
-    "AI, please transform the following conversation into a concise SOAP note. Do not assume any medical data, vital signs, or lab values. Base the note strictly on the information provided in the conversation. Ensure that the SOAP note is structured appropriately with Subjective, Objective, Assessment, and Plan sections. Strictly extract facts from the conversation. Here's the conversation:",
-  AI_SCRIBE_CONTEXT_AFTER:
-    "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
-  REALTIME: false,
-  REALTIME_RECODING_LENGTH: 5,
-};
+import { loadConfig } from "./config.js";
+import { sanitizeInput } from "./helpers.js";
 
+let config;
 let mediaRecorder;
 let mediaRecorderInterval;
 let audioChunks = [];
@@ -21,101 +11,27 @@ let recordButton = document.getElementById("recordButton");
 let stopButton = document.getElementById("stopButton");
 let userInput = document.getElementById("userInput");
 let soapNotesElement = document.getElementById("soapNotes");
+let toggleConfig = document.getElementById("toggleConfig");
 
 let deviceCounter = 0;
 
 let tabStream;
 
-function toggleConfigView() {
-  const configSection = document.getElementById("configSection");
-  if (
-    configSection.style.display === "none" ||
-    configSection.style.display === ""
-  ) {
-    configSection.style.display = "block";
-    this.textContent = "Hide Configuration";
-  } else {
-    configSection.style.display = "none";
-    this.textContent = "Show Configuration";
-  }
+async function init() {
+  await loadConfigData();
+}
+
+async function loadConfigData() {
+  config = await loadConfig();
 }
 
 // Toggle configuration visibility
-document
-  .getElementById("toggleConfig")
-  .addEventListener("click", toggleConfigView);
-
-// Load configuration from storage
-chrome.storage.sync.get(["config"], function (result) {
-  if (result.config) {
-    config = { ...config, ...result.config };
+toggleConfig.addEventListener("click", function (event) {
+  if (chrome.runtime.openOptionsPage) {
+    chrome.runtime.openOptionsPage();
+  } else {
+    window.open(chrome.runtime.getURL("options.html"));
   }
-  updateConfigInputs();
-});
-
-// Update input fields with current config values
-function updateConfigInputs() {
-  document.getElementById("whisperUrl").value = config.WHISPER_URL;
-  document.getElementById("whisperApiKey").value = config.WHISPER_API_KEY;
-  document.getElementById("aiScribeUrl").value = config.AI_SCRIBE_URL;
-  document.getElementById("aiScribeModel").value = config.AI_SCRIBE_MODEL;
-  document.getElementById("aiScribeContextBefore").value =
-    config.AI_SCRIBE_CONTEXT_BEFORE;
-  document.getElementById("aiScribeContextAfter").value =
-    config.AI_SCRIBE_CONTEXT_AFTER;
-  document.getElementById("realtimeToggle").checked = config.REALTIME;
-}
-
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-// Save configuration
-document.getElementById("saveConfig").addEventListener("click", function () {
-  let whisperUrl = document.getElementById("whisperUrl").value;
-
-  if (!isValidUrl(whisperUrl)) {
-    alert("Invalid Whisper URL");
-    return;
-  }
-
-  let whisperApiKey = document.getElementById("whisperApiKey").value;
-
-  let aiScribeUrl = document.getElementById("aiScribeUrl").value;
-
-  if (!isValidUrl(aiScribeUrl)) {
-    alert("Invalid AI Scribe URL");
-    return;
-  }
-
-  let aiScribeModel = document.getElementById("aiScribeModel").value;
-  let aiScribeContextBefore = document.getElementById(
-    "aiScribeContextBefore"
-  ).value;
-  let aiScribeContextAfter = document.getElementById(
-    "aiScribeContextAfter"
-  ).value;
-
-  let realtime = document.getElementById("realtimeToggle").checked;
-
-  config.WHISPER_URL = whisperUrl;
-  config.WHISPER_API_KEY = whisperApiKey;
-  config.AI_SCRIBE_URL = aiScribeUrl;
-  config.AI_SCRIBE_MODEL = aiScribeModel;
-  config.AI_SCRIBE_CONTEXT_BEFORE = aiScribeContextBefore;
-  config.AI_SCRIBE_CONTEXT_AFTER = aiScribeContextAfter;
-  config.REALTIME = realtime;
-
-  chrome.storage.sync.set({ config: config }, function () {
-    console.log("Configuration saved");
-    alert("Configuration saved successfully!");
-    toggleConfigView();
-  });
 });
 
 // Use the standard Web Audio API to enumerate devices
@@ -147,7 +63,9 @@ navigator.mediaDevices
     console.error("Error enumerating devices:", err);
   });
 
-recordButton.addEventListener("click", () => {
+recordButton.addEventListener("click", async () => {
+  await loadConfigData();
+
   let constraints = { audio: true };
 
   audioChunks = [];
@@ -288,20 +206,6 @@ generateSoapButton.addEventListener("click", () => {
   generateSoapNotes(transcribedText);
 });
 
-// Sanitize input to prevent XSS attacks
-function sanitizeInput(input) {
-  return input.replace(/[<>&'"]/g, (char) => {
-    const entities = {
-      "<": "&lt;",
-      ">": "&gt;",
-      "&": "&amp;",
-      "'": "&#39;",
-      '"': "&quot;",
-    };
-    return entities[char];
-  });
-}
-
 // Generate SOAP notes
 async function generateSoapNotes(text) {
   console.log("Generating SOAP notes");
@@ -341,3 +245,5 @@ async function generateSoapNotes(text) {
     alert("Error generating SOAP notes. Please try again.");
   }
 }
+
+init();
