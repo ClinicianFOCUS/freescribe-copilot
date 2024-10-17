@@ -9,6 +9,8 @@ export const defaultConfig = {
     "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
   REALTIME: false,
   REALTIME_RECODING_LENGTH: 5,
+  SILENCE_THRESHOLD: 0.01,
+  MIN_SILENCE_DURATION: 500,
 };
 
 export function loadConfig() {

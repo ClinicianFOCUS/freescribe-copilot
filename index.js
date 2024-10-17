@@ -12,9 +12,10 @@ let stopButton = document.getElementById("stopButton");
 let userInput = document.getElementById("userInput");
 let soapNotesElement = document.getElementById("soapNotes");
 let toggleConfig = document.getElementById("toggleConfig");
-
+let scriptProcessor;
+let silenceStart = null;
+let recordingStartTime = null;
 let deviceCounter = 0;
-
 let tabStream;
 
 async function init() {
@@ -114,21 +115,72 @@ recordButton.addEventListener("click", async () => {
           };
 
           mediaRecorder.onstop = () => {
-            let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-
-            convertAudioToText(audioBlob).then((result) => {
-              updateGUI(result.text);
-            });
+            if (audioChunks.length > 0) {
+              let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+              audioChunks = [];
+              convertAudioToText(audioBlob).then((result) => {
+                updateGUI(result.text);
+              });
+            }
           };
 
-          mediaRecorder.start();
-
           if (config.REALTIME) {
-            mediaRecorderInterval = setInterval(() => {
-              mediaRecorder.stop();
-              mediaRecorder.start();
-            }, config.REALTIME_RECODING_LENGTH * 1000);
+            scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+            micSource.connect(scriptProcessor);
+            tabSource.connect(scriptProcessor);
+            scriptProcessor.connect(audioContext.destination);
+
+            recordingStartTime = Date.now();
+            silenceStart = null;
+            minRecordingLength = config.REALTIME_RECODING_LENGTH * 1000;
+
+            scriptProcessor.onaudioprocess = function (event) {
+              const currentTime = Date.now();
+              const recordingDuration = currentTime - recordingStartTime;
+
+              if (recordingDuration < minRecordingLength) {
+                // Don't check for silence during the first 5 seconds
+                return;
+              }
+
+              const inputData = event.inputBuffer.getChannelData(0);
+              const inputDataLength = inputData.length;
+              let total = 0;
+
+              for (let i = 0; i < inputDataLength; i++) {
+                total += Math.abs(inputData[i]);
+              }
+
+              const average = total / inputDataLength;
+
+              if (average < config.SILENCE_THRESHOLD) {
+                if (silenceStart === null) {
+                  silenceStart = currentTime;
+                } else {
+                  const silenceDuration = currentTime - silenceStart;
+                  if (silenceDuration > config.MIN_SILENCE_DURATION) {
+                    console.log("silence detected");
+                    silenceStart = null;
+
+                    // Stop the current mediaRecorder
+                    mediaRecorder.stop();
+
+                    // Start a new mediaRecorder after a short delay
+                    setTimeout(() => {
+                      mediaRecorder.start();
+                      recordingStartTime = Date.now(); // Reset the recording start time
+                      console.log("New recording started after silence");
+                    }, 50); // 50ms delay before starting new recording
+                  }
+                }
+              } else {
+                console.log("voice detected");
+                silenceStart = null;
+              }
+            };
           }
+
+          mediaRecorder.start();
 
           recordButton.disabled = true;
           stopButton.disabled = false;
@@ -142,8 +194,13 @@ recordButton.addEventListener("click", async () => {
 });
 
 stopButton.addEventListener("click", () => {
+  if (scriptProcessor) {
+    scriptProcessor.disconnect();
+    scriptProcessor = null;
+  }
   if (mediaRecorderInterval) {
     clearInterval(mediaRecorderInterval);
+    mediaRecorderInterval = null;
   }
   mediaRecorder.stop();
   if (tabStream) {
