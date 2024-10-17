@@ -3,7 +3,6 @@ import { sanitizeInput } from "./helpers.js";
 
 let config;
 let mediaRecorder;
-let mediaRecorderInterval;
 let audioChunks = [];
 let audioContext;
 let audioInputSelect = document.getElementById("audioInputSelect");
@@ -13,6 +12,7 @@ let userInput = document.getElementById("userInput");
 let soapNotesElement = document.getElementById("soapNotes");
 let toggleConfig = document.getElementById("toggleConfig");
 let scriptProcessor;
+let audioWorkletNode;
 let silenceStart = null;
 let recordingStartTime = null;
 let deviceCounter = 0;
@@ -82,7 +82,7 @@ recordButton.addEventListener("click", async () => {
     .then((micStream) => {
       chrome.tabCapture.capture(
         { audio: true, video: false },
-        (capturedTabStream) => {
+        async (capturedTabStream) => {
           if (chrome.runtime.lastError) {
             console.error(chrome.runtime.lastError);
             return;
@@ -125,59 +125,86 @@ recordButton.addEventListener("click", async () => {
           };
 
           if (config.REALTIME) {
-            scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-            micSource.connect(scriptProcessor);
-            tabSource.connect(scriptProcessor);
-            scriptProcessor.connect(audioContext.destination);
+            await audioContext.audioWorklet.addModule(
+              chrome.runtime.getURL("processor.js")
+            );
 
-            recordingStartTime = Date.now();
-            silenceStart = null;
-            minRecordingLength = config.REALTIME_RECODING_LENGTH * 1000;
+            audioWorkletNode = new AudioWorkletNode(
+              audioContext,
+              "audio-processor"
+            );
 
-            scriptProcessor.onaudioprocess = function (event) {
-              const currentTime = Date.now();
-              const recordingDuration = currentTime - recordingStartTime;
+            audioWorkletNode.port.onmessage = (event) => {
+              if (event.data.type === "silence") {
+                // Stop the current mediaRecorder
+                mediaRecorder.stop();
 
-              if (recordingDuration < minRecordingLength) {
-                // Don't check for silence during the first 5 seconds
-                return;
-              }
+                // Start a new mediaRecorder after a short delay
+                setTimeout(() => {
+                  mediaRecorder.start();
 
-              const inputData = event.inputBuffer.getChannelData(0);
-              const inputDataLength = inputData.length;
-              let total = 0;
-
-              for (let i = 0; i < inputDataLength; i++) {
-                total += Math.abs(inputData[i]);
-              }
-
-              const average = total / inputDataLength;
-
-              if (average < config.SILENCE_THRESHOLD) {
-                if (silenceStart === null) {
-                  silenceStart = currentTime;
-                } else {
-                  const silenceDuration = currentTime - silenceStart;
-                  if (silenceDuration > config.MIN_SILENCE_DURATION) {
-                    console.log("silence detected");
-                    silenceStart = null;
-
-                    // Stop the current mediaRecorder
-                    mediaRecorder.stop();
-
-                    // Start a new mediaRecorder after a short delay
-                    setTimeout(() => {
-                      mediaRecorder.start();
-                      recordingStartTime = Date.now(); // Reset the recording start time
-                      console.log("New recording started after silence");
-                    }, 50); // 50ms delay before starting new recording
-                  }
-                }
-              } else {
-                console.log("voice detected");
-                silenceStart = null;
+                  console.log("New recording started after silence");
+                }, 50); // 50ms delay before starting new recording
               }
             };
+
+            audioWorkletNode.port.postMessage("START");
+            micSource.connect(audioWorkletNode);
+            tabSource.connect(audioWorkletNode);
+
+            //   scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+            //   micSource.connect(scriptProcessor);
+            //   tabSource.connect(scriptProcessor);
+            //   scriptProcessor.connect(audioContext.destination);
+
+            //   recordingStartTime = Date.now();
+            //   silenceStart = null;
+            //   minRecordingLength = config.REALTIME_RECODING_LENGTH * 1000;
+
+            //   scriptProcessor.onaudioprocess = function (event) {
+            //     const currentTime = Date.now();
+            //     const recordingDuration = currentTime - recordingStartTime;
+
+            //     if (recordingDuration < minRecordingLength) {
+            //       // Don't check for silence during the first 5 seconds
+            //       return;
+            //     }
+
+            //     const inputData = event.inputBuffer.getChannelData(0);
+            //     const inputDataLength = inputData.length;
+            //     let total = 0;
+
+            //     for (let i = 0; i < inputDataLength; i++) {
+            //       total += Math.abs(inputData[i]);
+            //     }
+
+            //     const average = total / inputDataLength;
+
+            //     if (average < config.SILENCE_THRESHOLD) {
+            //       if (silenceStart === null) {
+            //         silenceStart = currentTime;
+            //       } else {
+            //         const silenceDuration = currentTime - silenceStart;
+            //         if (silenceDuration > config.MIN_SILENCE_DURATION) {
+            //           console.log("silence detected");
+            //           silenceStart = null;
+
+            //           // Stop the current mediaRecorder
+            //           mediaRecorder.stop();
+
+            //           // Start a new mediaRecorder after a short delay
+            //           setTimeout(() => {
+            //             mediaRecorder.start();
+            //             recordingStartTime = Date.now(); // Reset the recording start time
+            //             console.log("New recording started after silence");
+            //           }, 50); // 50ms delay before starting new recording
+            //         }
+            //       }
+            //     } else {
+            //       console.log("voice detected");
+            //       silenceStart = null;
+            //     }
+            //   };
           }
 
           mediaRecorder.start();
@@ -198,9 +225,10 @@ stopButton.addEventListener("click", () => {
     scriptProcessor.disconnect();
     scriptProcessor = null;
   }
-  if (mediaRecorderInterval) {
-    clearInterval(mediaRecorderInterval);
-    mediaRecorderInterval = null;
+  if (audioWorkletNode) {
+    audioWorkletNode.port.postMessage("STOP");
+    audioWorkletNode.disconnect();
+    audioWorkletNode = null;
   }
   mediaRecorder.stop();
   if (tabStream) {

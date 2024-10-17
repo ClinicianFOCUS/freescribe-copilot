@@ -52,6 +52,10 @@ function updateConfig() {
 
   saveConfig(config).then(function () {
     console.info("configuration saved!");
+
+    chrome.tabs.getCurrent(function (tab) {
+      chrome.tabs.remove(tab.id, function () {});
+    });
   });
 }
 
