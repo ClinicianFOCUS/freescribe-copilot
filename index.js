@@ -11,8 +11,9 @@ let audioInputSelect = document.getElementById("audioInputSelect");
 let recordButton = document.getElementById("recordButton");
 let stopButton = document.getElementById("stopButton");
 let userInput = document.getElementById("userInput");
-let soapNotesElement = document.getElementById("soapNotes");
+let notesElement = document.getElementById("notes");
 let toggleConfig = document.getElementById("toggleConfig");
+let generateNotesButton = document.getElementById("generateNotesButton");
 let scriptProcessor;
 let silenceStart = null;
 let recordingStartTime = null;
@@ -221,11 +222,11 @@ async function convertAudioToText(audioBlob) {
   formData.append("audio", audioBlob, "audio.wav");
 
   const headers = {
-    Authorization: "Bearer " + config.WHISPER_API_KEY,
+    Authorization: "Bearer " + config.TRANSCRIPTION_API_KEY,
   };
 
   try {
-    const response = await fetch(config.WHISPER_URL, {
+    const response = await fetch(config.TRANSCRIPTION_URL, {
       method: "POST",
       headers: headers,
       body: formData,
@@ -250,36 +251,32 @@ function updateGUI(text) {
   userInput.scrollTop = userInput.scrollHeight;
 }
 
-// Add this near the top of your file with other element selections
-let generateSoapButton = document.getElementById("generateSoapButton");
-
-// Add this event listener at the end of your file
-generateSoapButton.addEventListener("click", () => {
+generateNotesButton.addEventListener("click", () => {
   const transcribedText = userInput.value;
   if (transcribedText.trim() === "") {
     alert("Please record some audio first.");
     return;
   }
 
-  generateSoapNotes(transcribedText);
+  generateNotes(transcribedText);
 });
 
-// Generate SOAP notes
-async function generateSoapNotes(text) {
-  Logger.log("Generating SOAP notes");
+// Generate notes
+async function generateNotes(text) {
+  Logger.log("Generating notes");
 
   const sanitizedText = sanitizeInput(text);
 
-  const prompt = `${config.AI_SCRIBE_CONTEXT_BEFORE} ${sanitizedText} ${config.AI_SCRIBE_CONTEXT_AFTER}`;
+  const prompt = `${config.LLM_CONTEXT_BEFORE} ${sanitizedText} ${config.LLM_CONTEXT_AFTER}`;
 
   try {
-    const response = await fetch(config.AI_SCRIBE_URL, {
+    const response = await fetch(config.LLM_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: config.AI_SCRIBE_MODEL,
+        model: config.LLM_MODEL,
         messages: [
           {
             role: "user",
@@ -296,11 +293,11 @@ async function generateSoapNotes(text) {
     }
 
     const result = await response.json();
-    const soapNotes = result.choices[0].message.content;
-    soapNotesElement.textContent = soapNotes;
+    const notes = result.choices[0].message.content;
+    notesElement.textContent = notes;
   } catch (error) {
-    Logger.error("Error generating SOAP notes:", error);
-    alert("Error generating SOAP notes. Please try again.");
+    Logger.error("Error generating notes:", error);
+    alert("Error generating notes. Please try again.");
   }
 }
 

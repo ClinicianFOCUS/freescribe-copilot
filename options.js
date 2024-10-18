@@ -5,54 +5,55 @@ import { Logger } from "./logger.js";
 let config;
 
 function showConfig() {
-  document.getElementById("whisperUrl").value = config.WHISPER_URL;
-  document.getElementById("whisperApiKey").value = config.WHISPER_API_KEY;
-  document.getElementById("aiScribeUrl").value = config.AI_SCRIBE_URL;
-  document.getElementById("aiScribeModel").value = config.AI_SCRIBE_MODEL;
-  document.getElementById("aiScribeContextBefore").value =
-    config.AI_SCRIBE_CONTEXT_BEFORE;
-  document.getElementById("aiScribeContextAfter").value =
-    config.AI_SCRIBE_CONTEXT_AFTER;
+  document.getElementById("transcriptionUrl").value = config.TRANSCRIPTION_URL;
+  document.getElementById("transcriptionApiKey").value =
+    config.TRANSCRIPTION_API_KEY;
+  document.getElementById("llmUrl").value = config.LLM_URL;
+  document.getElementById("llmModel").value = config.LLM_MODEL;
+  document.getElementById("llmContextBefore").value = config.LLM_CONTEXT_BEFORE;
+  document.getElementById("llmContextAfter").value = config.LLM_CONTEXT_AFTER;
   document.getElementById("realtimeToggle").checked = config.REALTIME;
 }
 
 function updateConfig() {
-  let whisperUrl = document.getElementById("whisperUrl").value;
+  let transcriptionUrl = document.getElementById("transcriptionUrl").value;
 
-  if (!isValidUrl(whisperUrl)) {
-    alert("Invalid Whisper URL");
+  if (!isValidUrl(transcriptionUrl)) {
+    alert("Invalid Transcription URL");
     return;
   }
 
-  let whisperApiKey = document.getElementById("whisperApiKey").value;
+  let transcriptionApiKey = document.getElementById(
+    "transcriptionApiKey"
+  ).value;
 
-  let aiScribeUrl = document.getElementById("aiScribeUrl").value;
+  let llmUrl = document.getElementById("llmUrl").value;
 
-  if (!isValidUrl(aiScribeUrl)) {
-    alert("Invalid AI Scribe URL");
+  if (!isValidUrl(llmUrl)) {
+    alert("Invalid LLM URL");
     return;
   }
 
-  let aiScribeModel = document.getElementById("aiScribeModel").value;
-  let aiScribeContextBefore = document.getElementById(
-    "aiScribeContextBefore"
-  ).value;
-  let aiScribeContextAfter = document.getElementById(
-    "aiScribeContextAfter"
-  ).value;
+  let llmModel = document.getElementById("llmModel").value;
+  let llmContextBefore = document.getElementById("llmContextBefore").value;
+  let llmContextAfter = document.getElementById("llmContextAfter").value;
 
   let realtime = document.getElementById("realtimeToggle").checked;
 
-  config.WHISPER_URL = whisperUrl;
-  config.WHISPER_API_KEY = whisperApiKey;
-  config.AI_SCRIBE_URL = aiScribeUrl;
-  config.AI_SCRIBE_MODEL = aiScribeModel;
-  config.AI_SCRIBE_CONTEXT_BEFORE = aiScribeContextBefore;
-  config.AI_SCRIBE_CONTEXT_AFTER = aiScribeContextAfter;
+  config.TRANSCRIPTION_URL = transcriptionUrl;
+  config.TRANSCRIPTION_API_KEY = transcriptionApiKey;
+  config.LLM_URL = llmUrl;
+  config.LLM_MODEL = llmModel;
+  config.LLM_CONTEXT_BEFORE = llmContextBefore;
+  config.LLM_CONTEXT_AFTER = llmContextAfter;
   config.REALTIME = realtime;
 
   saveConfig(config).then(function () {
     Logger.info("configuration saved!");
+    alert("configuration saved!");
+    chrome.tabs.getCurrent(function (tab) {
+      chrome.tabs.remove(tab.id, function () {});
+    });
   });
 }
 
