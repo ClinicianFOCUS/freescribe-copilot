@@ -1,104 +1,40 @@
-// Default values for configurable constants
-let config = {
-  WHISPER_URL: "http://localhost:8000/whisperaudio",
-  WHISPER_API_KEY: "",
-  AI_SCRIBE_URL: "http://localhost:1337/v1/chat/completions",
-  AI_SCRIBE_MODEL: "gemma-2-2b-it",
-  AI_SCRIBE_CONTEXT_BEFORE:
-    "AI, please transform the following conversation into a concise SOAP note. Do not assume any medical data, vital signs, or lab values. Base the note strictly on the information provided in the conversation. Ensure that the SOAP note is structured appropriately with Subjective, Objective, Assessment, and Plan sections. Strictly extract facts from the conversation. Here's the conversation:",
-  AI_SCRIBE_CONTEXT_AFTER:
-    "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
-};
+import { loadConfig } from "./config.js";
+import { sanitizeInput } from "./helpers.js";
+import { Logger } from "./logger.js";
+
+let config;
 let mediaRecorder;
+let mediaRecorderInterval;
 let audioChunks = [];
 let audioContext;
 let audioInputSelect = document.getElementById("audioInputSelect");
 let recordButton = document.getElementById("recordButton");
 let stopButton = document.getElementById("stopButton");
-
+let userInput = document.getElementById("userInput");
+let notesElement = document.getElementById("notes");
+let toggleConfig = document.getElementById("toggleConfig");
+let generateNotesButton = document.getElementById("generateNotesButton");
+let scriptProcessor;
+let silenceStart = null;
+let recordingStartTime = null;
 let deviceCounter = 0;
-
 let tabStream;
 
-// Toggle configuration visibility
-document.getElementById("toggleConfig").addEventListener("click", function () {
-  const configSection = document.getElementById("configSection");
-  if (
-    configSection.style.display === "none" ||
-    configSection.style.display === ""
-  ) {
-    configSection.style.display = "block";
-    this.textContent = "Hide Configuration";
-  } else {
-    configSection.style.display = "none";
-    this.textContent = "Show Configuration";
-  }
-});
-
-// Load configuration from storage
-chrome.storage.sync.get(["config"], function (result) {
-  if (result.config) {
-    config = { ...config, ...result.config };
-  }
-  updateConfigInputs();
-});
-
-// Update input fields with current config values
-function updateConfigInputs() {
-  document.getElementById("whisperUrl").value = config.WHISPER_URL;
-  document.getElementById("whisperApiKey").value = config.WHISPER_API_KEY;
-  document.getElementById("aiScribeUrl").value = config.AI_SCRIBE_URL;
-  document.getElementById("aiScribeModel").value = config.AI_SCRIBE_MODEL;
-  document.getElementById("aiScribeContextBefore").value =
-    config.AI_SCRIBE_CONTEXT_BEFORE;
-  document.getElementById("aiScribeContextAfter").value =
-    config.AI_SCRIBE_CONTEXT_AFTER;
+async function init() {
+  await loadConfigData();
 }
 
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
+async function loadConfigData() {
+  config = await loadConfig();
+}
+
+// Toggle configuration visibility
+toggleConfig.addEventListener("click", function (event) {
+  if (chrome.runtime.openOptionsPage) {
+    chrome.runtime.openOptionsPage();
+  } else {
+    window.open(chrome.runtime.getURL("options.html"));
   }
-};
-
-// Save configuration
-document.getElementById("saveConfig").addEventListener("click", function () {
-  let whisperUrl = document.getElementById("whisperUrl").value;
-  let whisperApiKey = document.getElementById("whisperApiKey").value;
-  if (!isValidUrl(whisperUrl)) {
-    alert("Invalid Whisper URL");
-    return;
-  }
-
-  let aiScribeUrl = document.getElementById("aiScribeUrl").value;
-
-  if (!isValidUrl(aiScribeUrl)) {
-    alert("Invalid AI Scribe URL");
-    return;
-  }
-
-  let aiScribeModel = document.getElementById("aiScribeModel").value;
-  let aiScribeContextBefore = document.getElementById(
-    "aiScribeContextBefore"
-  ).value;
-  let aiScribeContextAfter = document.getElementById(
-    "aiScribeContextAfter"
-  ).value;
-
-  config.WHISPER_URL = whisperUrl;
-  config.WHISPER_API_KEY = whisperApiKey;
-  config.AI_SCRIBE_URL = aiScribeUrl;
-  config.AI_SCRIBE_MODEL = aiScribeModel;
-  config.AI_SCRIBE_CONTEXT_BEFORE = aiScribeContextBefore;
-  config.AI_SCRIBE_CONTEXT_AFTER = aiScribeContextAfter;
-
-  chrome.storage.sync.set({ config: config }, function () {
-    console.log("Configuration saved");
-    alert("Configuration saved successfully!");
-  });
 });
 
 // Use the standard Web Audio API to enumerate devices
@@ -127,13 +63,16 @@ navigator.mediaDevices
     });
   })
   .catch((err) => {
-    console.error("Error enumerating devices:", err);
+    Logger.error("Error enumerating devices:", err);
   });
 
-recordButton.addEventListener("click", () => {
+recordButton.addEventListener("click", async () => {
+  await loadConfigData();
+
   let constraints = { audio: true };
 
   audioChunks = [];
+  userInput.value = "";
 
   // If the selected value starts with "audioinput_", it's our generated ID
   if (!audioInputSelect.value.startsWith("audioinput_")) {
@@ -147,7 +86,7 @@ recordButton.addEventListener("click", () => {
         { audio: true, video: false },
         (capturedTabStream) => {
           if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
+            Logger.error(chrome.runtime.lastError);
             return;
           }
 
@@ -172,40 +111,99 @@ recordButton.addEventListener("click", () => {
           const combinedStream = destination.stream;
 
           mediaRecorder = new MediaRecorder(combinedStream);
+
           mediaRecorder.ondataavailable = (event) => {
             audioChunks.push(event.data);
           };
+
           mediaRecorder.onstop = () => {
-            let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-            let audioUrl = URL.createObjectURL(audioBlob);
-            let audio = new Audio(audioUrl);
-
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl);
-            };
-
-            // NOTE: If needed, uncomment the following line to play the audio
-            // audio.play();
-
-            // send audio to whisper server
-            convertAudioToText(audioBlob).then((result) => {
-              updateGUI(result.text);
-            });
+            if (audioChunks.length > 0) {
+              let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+              audioChunks = [];
+              convertAudioToText(audioBlob).then((result) => {
+                updateGUI(result.text);
+              });
+            }
           };
+
+          if (config.REALTIME) {
+            scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+            micSource.connect(scriptProcessor);
+            tabSource.connect(scriptProcessor);
+            scriptProcessor.connect(audioContext.destination);
+
+            recordingStartTime = Date.now();
+            silenceStart = null;
+            minRecordingLength = config.REALTIME_RECODING_LENGTH * 1000;
+
+            scriptProcessor.onaudioprocess = function (event) {
+              const currentTime = Date.now();
+              const recordingDuration = currentTime - recordingStartTime;
+
+              if (recordingDuration < minRecordingLength) {
+                // Don't check for silence during the first 5 seconds
+                return;
+              }
+
+              const inputData = event.inputBuffer.getChannelData(0);
+              const inputDataLength = inputData.length;
+              let total = 0;
+
+              for (let i = 0; i < inputDataLength; i++) {
+                total += Math.abs(inputData[i]);
+              }
+
+              const average = total / inputDataLength;
+
+              if (average < config.SILENCE_THRESHOLD) {
+                if (silenceStart === null) {
+                  silenceStart = currentTime;
+                } else {
+                  const silenceDuration = currentTime - silenceStart;
+                  if (silenceDuration > config.MIN_SILENCE_DURATION) {
+                    Logger.log("silence detected");
+                    silenceStart = null;
+
+                    // Stop the current mediaRecorder
+                    mediaRecorder.stop();
+
+                    // Start a new mediaRecorder after a short delay
+                    setTimeout(() => {
+                      mediaRecorder.start();
+                      recordingStartTime = Date.now(); // Reset the recording start time
+                      Logger.log("New recording started after silence");
+                    }, 50); // 50ms delay before starting new recording
+                  }
+                }
+              } else {
+                Logger.log("voice detected");
+                silenceStart = null;
+              }
+            };
+          }
+
           mediaRecorder.start();
+
           recordButton.disabled = true;
           stopButton.disabled = false;
-          // Disable select elements
           audioInputSelect.disabled = true;
         }
       );
     })
     .catch((err) => {
-      console.error("Error accessing the microphone or tab audio:", err);
+      Logger.error("Error accessing the microphone or tab audio:", err);
     });
 });
 
 stopButton.addEventListener("click", () => {
+  if (scriptProcessor) {
+    scriptProcessor.disconnect();
+    scriptProcessor = null;
+  }
+  if (mediaRecorderInterval) {
+    clearInterval(mediaRecorderInterval);
+    mediaRecorderInterval = null;
+  }
   mediaRecorder.stop();
   if (tabStream) {
     tabStream.getTracks().forEach((track) => track.stop());
@@ -215,21 +213,20 @@ stopButton.addEventListener("click", () => {
   }
   recordButton.disabled = false;
   stopButton.disabled = true;
-  // Re-enable select elements
   audioInputSelect.disabled = false;
 });
 
 async function convertAudioToText(audioBlob) {
-  console.log("Sending audio to server");
+  Logger.log("Sending audio to server");
   const formData = new FormData();
   formData.append("audio", audioBlob, "audio.wav");
 
   const headers = {
-    "X-API-Key": config.WHISPER_API_KEY,
+    Authorization: "Bearer " + config.TRANSCRIPTION_API_KEY,
   };
 
   try {
-    const response = await fetch(config.WHISPER_URL, {
+    const response = await fetch(config.TRANSCRIPTION_URL, {
       method: "POST",
       headers: headers,
       body: formData,
@@ -242,7 +239,7 @@ async function convertAudioToText(audioBlob) {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error("Audio to text conversion error:", error);
+    Logger.error("Audio to text conversion error:", error);
     throw new Error(`Failed to convert audio to text: ${error.message}`, {
       cause: error,
     });
@@ -250,58 +247,36 @@ async function convertAudioToText(audioBlob) {
 }
 
 function updateGUI(text) {
-  // Update your GUI with the transcribed text
-  // This might involve updating a DOM element
-  const userInput = document.getElementById("userInput");
-  userInput.value += text + "\n";
+  userInput.value += text;
   userInput.scrollTop = userInput.scrollHeight;
 }
 
-// Add this near the top of your file with other element selections
-let generateSoapButton = document.getElementById("generateSoapButton");
-
-// Add this event listener at the end of your file
-generateSoapButton.addEventListener("click", () => {
-  const transcribedText = document.getElementById("userInput").value;
+generateNotesButton.addEventListener("click", () => {
+  const transcribedText = userInput.value;
   if (transcribedText.trim() === "") {
     alert("Please record some audio first.");
     return;
   }
 
-  // Call a function to generate SOAP notes
-  generateSoapNotes(transcribedText);
+  generateNotes(transcribedText);
 });
 
-// Sanitize input to prevent XSS attacks
-function sanitizeInput(input) {
-  return input.replace(/[<>&'"]/g, (char) => {
-    const entities = {
-      "<": "&lt;",
-      ">": "&gt;",
-      "&": "&amp;",
-      "'": "&#39;",
-      '"': "&quot;",
-    };
-    return entities[char];
-  });
-}
-
-// Generate SOAP notes
-async function generateSoapNotes(text) {
-  console.log("Generating SOAP notes");
+// Generate notes
+async function generateNotes(text) {
+  Logger.log("Generating notes");
 
   const sanitizedText = sanitizeInput(text);
 
-  const prompt = `${config.AI_SCRIBE_CONTEXT_BEFORE} ${sanitizedText} ${config.AI_SCRIBE_CONTEXT_AFTER}`;
+  const prompt = `${config.LLM_CONTEXT_BEFORE} ${sanitizedText} ${config.LLM_CONTEXT_AFTER}`;
 
   try {
-    const response = await fetch(config.AI_SCRIBE_URL, {
+    const response = await fetch(config.LLM_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: config.AI_SCRIBE_MODEL,
+        model: config.LLM_MODEL,
         messages: [
           {
             role: "user",
@@ -318,16 +293,12 @@ async function generateSoapNotes(text) {
     }
 
     const result = await response.json();
-    const soapNotes = result.choices[0].message.content;
-    displaySoapNotes(soapNotes);
+    const notes = result.choices[0].message.content;
+    notesElement.textContent = notes;
   } catch (error) {
-    console.error("Error generating SOAP notes:", error);
-    alert("Error generating SOAP notes. Please try again.");
+    Logger.error("Error generating notes:", error);
+    alert("Error generating notes. Please try again.");
   }
 }
 
-// Display SOAP notes
-function displaySoapNotes(soapNotes) {
-  const soapNotesElement = document.getElementById("soapNotes");
-  soapNotesElement.textContent = soapNotes;
-}
+init();

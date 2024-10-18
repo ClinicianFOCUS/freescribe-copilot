@@ -1,17 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "Freescribe Copilot",
+  "name": "FreeScribe",
   "version": "1.0",
   "description": "Record and play audio from tab and microphone",
-  "permissions": ["activeTab", "tabCapture", "storage", "sidePanel"],
+  "permissions": [
+    "activeTab",
+    "tabCapture",
+    "storage",
+    "sidePanel",
+    "contextMenus"
+  ],
   "host_permissions": ["<all_urls>"],
   "side_panel": {
     "default_path": "index.html"
   },
+  "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Freescribe Copilot"
+    "default_title": "FreeScribe"
   }
 }
