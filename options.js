@@ -1,5 +1,6 @@
 import { loadConfig, saveConfig } from "./config.js";
 import { isValidUrl } from "./helpers.js";
+import { Logger } from "./logger.js";
 
 let config;
 
@@ -51,7 +52,7 @@ function updateConfig() {
   config.REALTIME = realtime;
 
   saveConfig(config).then(function () {
-    console.info("configuration saved!");
+    Logger.info("configuration saved!");
   });
 }
 

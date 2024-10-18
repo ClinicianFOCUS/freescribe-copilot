@@ -11,6 +11,7 @@ export const defaultConfig = {
   REALTIME_RECODING_LENGTH: 5,
   SILENCE_THRESHOLD: 0.01,
   MIN_SILENCE_DURATION: 500,
+  ENABLE_LOGGING: true,
 };
 
 export function loadConfig() {
@@ -20,6 +21,12 @@ export function loadConfig() {
       resolve({ ...defaultConfig, ...result.config });
     });
   });
+}
+
+export async function getConfig(key) {
+  let config = loadConfig();
+
+  return config[key];
 }
 
 export function saveConfig(config) {

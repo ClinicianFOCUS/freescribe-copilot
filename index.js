@@ -1,5 +1,6 @@
 import { loadConfig } from "./config.js";
 import { sanitizeInput } from "./helpers.js";
+import { Logger } from "./logger.js";
 
 let config;
 let mediaRecorder;
@@ -61,7 +62,7 @@ navigator.mediaDevices
     });
   })
   .catch((err) => {
-    console.error("Error enumerating devices:", err);
+    Logger.error("Error enumerating devices:", err);
   });
 
 recordButton.addEventListener("click", async () => {
@@ -84,7 +85,7 @@ recordButton.addEventListener("click", async () => {
         { audio: true, video: false },
         (capturedTabStream) => {
           if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
+            Logger.error(chrome.runtime.lastError);
             return;
           }
 
@@ -159,7 +160,7 @@ recordButton.addEventListener("click", async () => {
                 } else {
                   const silenceDuration = currentTime - silenceStart;
                   if (silenceDuration > config.MIN_SILENCE_DURATION) {
-                    console.log("silence detected");
+                    Logger.log("silence detected");
                     silenceStart = null;
 
                     // Stop the current mediaRecorder
@@ -169,12 +170,12 @@ recordButton.addEventListener("click", async () => {
                     setTimeout(() => {
                       mediaRecorder.start();
                       recordingStartTime = Date.now(); // Reset the recording start time
-                      console.log("New recording started after silence");
+                      Logger.log("New recording started after silence");
                     }, 50); // 50ms delay before starting new recording
                   }
                 }
               } else {
-                console.log("voice detected");
+                Logger.log("voice detected");
                 silenceStart = null;
               }
             };
@@ -189,7 +190,7 @@ recordButton.addEventListener("click", async () => {
       );
     })
     .catch((err) => {
-      console.error("Error accessing the microphone or tab audio:", err);
+      Logger.error("Error accessing the microphone or tab audio:", err);
     });
 });
 
@@ -215,7 +216,7 @@ stopButton.addEventListener("click", () => {
 });
 
 async function convertAudioToText(audioBlob) {
-  console.log("Sending audio to server");
+  Logger.log("Sending audio to server");
   const formData = new FormData();
   formData.append("audio", audioBlob, "audio.wav");
 
@@ -237,7 +238,7 @@ async function convertAudioToText(audioBlob) {
     const result = await response.json();
     return result;
   } catch (error) {
-    console.error("Audio to text conversion error:", error);
+    Logger.error("Audio to text conversion error:", error);
     throw new Error(`Failed to convert audio to text: ${error.message}`, {
       cause: error,
     });
@@ -265,7 +266,7 @@ generateSoapButton.addEventListener("click", () => {
 
 // Generate SOAP notes
 async function generateSoapNotes(text) {
-  console.log("Generating SOAP notes");
+  Logger.log("Generating SOAP notes");
 
   const sanitizedText = sanitizeInput(text);
 
@@ -298,7 +299,7 @@ async function generateSoapNotes(text) {
     const soapNotes = result.choices[0].message.content;
     soapNotesElement.textContent = soapNotes;
   } catch (error) {
-    console.error("Error generating SOAP notes:", error);
+    Logger.error("Error generating SOAP notes:", error);
     alert("Error generating SOAP notes. Please try again.");
   }
 }
