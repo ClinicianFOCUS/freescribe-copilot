@@ -16,58 +16,59 @@ let userInput = document.getElementById("userInput");
 let notesElement = document.getElementById("notes");
 let toggleConfig = document.getElementById("toggleConfig");
 let generateNotesButton = document.getElementById("generateNotesButton");
+let volumeLevel = document.getElementById("volumeLevel");
 let scriptProcessor;
 let audioWorkletNode;
 let deviceCounter = 0;
 let tabStream;
+let micStream;
 let silenceTimeout;
 let isRecording = false;
-let isPause = false;
 
 async function init() {
   await loadConfigData();
+  await getAudioDeviceList();
 }
 
 async function loadConfigData() {
   config = await loadConfig();
 }
 
-// Use the standard Web Audio API to enumerate devices
-navigator.mediaDevices
-  .enumerateDevices()
-  .then((devices) => {
-    devices.forEach((device) => {
-      let option = document.createElement("option");
-      if (device.deviceId && device.deviceId !== "") {
-        option.value = device.deviceId;
-      } else {
-        // Generate a unique ID if deviceId is empty
-        option.value = `${device.kind}_${deviceCounter++}`;
-      }
+async function getAudioDeviceList() {
+  // Use the standard Web Audio API to enumerate devices
+  navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) => {
+      devices.forEach((device) => {
+        let option = document.createElement("option");
+        if (device.deviceId && device.deviceId !== "") {
+          option.value = device.deviceId;
+        } else {
+          // Generate a unique ID if deviceId is empty
+          option.value = `${device.kind}_${deviceCounter++}`;
+        }
 
-      if (device.label) {
-        option.text = device.label;
-      } else {
-        // If label is not available, use the kind and generated ID
-        option.text = `${device.kind} (${option.value})`;
-      }
+        if (device.label) {
+          option.text = device.label;
+        } else {
+          // If label is not available, use the kind and generated ID
+          option.text = `${device.kind} (${option.value})`;
+        }
 
-      if (device.kind === "audioinput") {
-        audioInputSelect.appendChild(option);
-      }
+        if (device.kind === "audioinput") {
+          audioInputSelect.appendChild(option);
+        }
+      });
+
+      startMicStream();
+    })
+    .catch((err) => {
+      Logger.error("Error enumerating devices:", err);
     });
-  })
-  .catch((err) => {
-    Logger.error("Error enumerating devices:", err);
-  });
+}
 
-async function startRecording() {
-  await loadConfigData();
-
+async function startMicStream() {
   let constraints = { audio: true };
-
-  audioChunks = [];
-  userInput.value = "";
 
   // If the selected value starts with "audioinput_", it's our generated ID
   if (!audioInputSelect.value.startsWith("audioinput_")) {
@@ -76,50 +77,107 @@ async function startRecording() {
 
   navigator.mediaDevices
     .getUserMedia(constraints)
-    .then((micStream) => {
-      chrome.tabCapture.capture(
-        { audio: true, video: false },
-        async (capturedTabStream) => {
-          if (chrome.runtime.lastError) {
-            Logger.error(chrome.runtime.lastError);
-            return;
+    .then((stream) => {
+      if (micStream) {
+        micStream.getTracks().forEach((track) => track.stop());
+      }
+      micStream = stream;
+
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      analyser.fftSize = 512;
+      analyser.minDecibels = -127;
+      analyser.maxDecibels = 0;
+      analyser.smoothingTimeConstant = 0.4;
+
+      microphone.connect(analyser);
+
+      const updateVolume = () => {
+        analyser.getByteFrequencyData(dataArray);
+
+        let volumeSum = 0;
+        for (const volume of dataArray) {
+          volumeSum += volume;
+        }
+        const averageVolume = volumeSum / dataArray.length;
+        // Value range: 127 = analyser.maxDecibels - analyser.minDecibels;
+        let volume = (averageVolume * 100) / 127;
+
+        volumeLevel.style.width = `${volume}%`;
+        requestAnimationFrame(updateVolume);
+      };
+
+      updateVolume();
+    })
+    .catch((err) => {
+      Logger.error("Error accessing the microphone or tab audio:", err);
+    });
+}
+
+async function startRecording() {
+  await loadConfigData();
+
+  audioChunks = [];
+  userInput.value = "";
+
+  chrome.tabCapture.capture(
+    { audio: true, video: false },
+    async (capturedTabStream) => {
+      if (chrome.runtime.lastError) {
+        Logger.error(chrome.runtime.lastError);
+        return;
+      }
+
+      tabStream = capturedTabStream;
+
+      const audioContext = new AudioContext();
+      const micSource = audioContext.createMediaStreamSource(micStream);
+      const tabSource = audioContext.createMediaStreamSource(tabStream);
+      const destination = audioContext.createMediaStreamDestination();
+
+      // Create a gain node for the tab audio (for volume control if needed)
+      const tabGain = audioContext.createGain();
+      tabGain.gain.value = 1; // Set to 1 for passthrough, or adjust as needed
+
+      // Connect the tab audio to both the destination and the audio context destination (speakers)
+      tabSource.connect(tabGain);
+      tabGain.connect(destination);
+      tabGain.connect(audioContext.destination);
+
+      micSource.connect(destination);
+
+      const combinedStream = destination.stream;
+
+      mediaRecorder = new MediaRecorder(combinedStream);
+
+      const silenceDetector = new SilenceDetector(config);
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        if (audioChunks.length > 0) {
+          const isAudioAvailable = await silenceDetector.isAudioAvailable(
+            audioChunks
+          );
+          Logger.log(
+            isAudioAvailable ? "Recording has sound" : "Recording is silent"
+          );
+
+          if (isAudioAvailable) {
+            let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            audioChunks = [];
+            convertAudioToText(audioBlob).then((result) => {
+              updateGUI(result.text);
+            });
           }
-
-          tabStream = capturedTabStream;
-
-          const audioContext = new AudioContext();
-          const micSource = audioContext.createMediaStreamSource(micStream);
-          const tabSource = audioContext.createMediaStreamSource(tabStream);
-          const destination = audioContext.createMediaStreamDestination();
-
-          // Create a gain node for the tab audio (for volume control if needed)
-          const tabGain = audioContext.createGain();
-          tabGain.gain.value = 1; // Set to 1 for passthrough, or adjust as needed
-
-          // Connect the tab audio to both the destination and the audio context destination (speakers)
-          tabSource.connect(tabGain);
-          tabGain.connect(destination);
-          tabGain.connect(audioContext.destination);
-
-          micSource.connect(destination);
-
-          const combinedStream = destination.stream;
-
-          mediaRecorder = new MediaRecorder(combinedStream);
-
-          mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-          };
-
-          mediaRecorder.onstop = () => {
-            if (audioChunks.length > 0) {
-              let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-              audioChunks = [];
-              convertAudioToText(audioBlob).then((result) => {
-                updateGUI(result.text);
-              });
-            }
-          };
+        }
+      };
 
           if (config.REALTIME) {
             await audioContext.audioWorklet.addModule(
@@ -150,19 +208,14 @@ async function startRecording() {
             tabSource.connect(audioWorkletNode);
           }
 
-          mediaRecorder.start();
-          audioInputSelect.disabled = true;
-          pauseButton.disabled = false;
-          isPause = false;
-          isRecording = true;
-          recordButton.style.display = "none";
-          stopButton.style.display = "inline";
-        }
-      );
-    })
-    .catch((err) => {
-      Logger.error("Error accessing the microphone or tab audio:", err);
-    });
+      mediaRecorder.start();
+      audioInputSelect.disabled = true;
+      pauseButton.disabled = false;
+      isRecording = true;
+      recordButton.style.display = "none";
+      stopButton.style.display = "inline";
+    }
+  );
 }
 
 async function stopRecording() {
@@ -188,7 +241,6 @@ async function stopRecording() {
   }
   audioInputSelect.disabled = false;
   pauseButton.disabled = true;
-  isPause = false;
   isRecording = false;
   stopButton.style.display = "none";
   recordButton.style.display = "inline";
@@ -203,7 +255,6 @@ function pauseRecording() {
     return;
   }
 
-  isPause = true;
   if (silenceTimeout) {
     clearTimeout(silenceTimeout);
     silenceTimeout = null;
@@ -220,7 +271,6 @@ function resumeRecording() {
     return;
   }
 
-  isPause = false;
   mediaRecorder.start();
   resumeButton.style.display = "none";
   pauseButton.style.display = "inline";
@@ -322,6 +372,8 @@ stopButton.addEventListener("click", stopRecording);
 pauseButton.addEventListener("click", pauseRecording);
 
 resumeButton.addEventListener("click", resumeRecording);
+
+audioInputSelect.addEventListener("change", startMicStream);
 
 generateNotesButton.addEventListener("click", () => {
   const transcribedText = userInput.value;

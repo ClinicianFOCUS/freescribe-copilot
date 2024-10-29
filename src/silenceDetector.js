@@ -29,4 +29,27 @@ export class SilenceDetector {
     const silenceDuration = currentTime - this.silenceStart;
     return silenceDuration > this.config.MIN_SILENCE_DURATION;
   }
+
+  async isAudioAvailable(blobArray) {
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+
+    for (const blob of blobArray) {
+      // Convert each Blob to an ArrayBuffer
+      const arrayBuffer = await blob.arrayBuffer();
+
+      // Decode the ArrayBuffer to get audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const rawData = audioBuffer.getChannelData(0); // Get the first channel's audio data
+
+      // Check if the audio levels are consistently below the silence threshold
+      for (let i = 0; i < rawData.length; i++) {
+        if (Math.abs(rawData[i]) > this.config.SILENCE_THRESHOLD) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
 }
