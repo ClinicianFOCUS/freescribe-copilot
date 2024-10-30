@@ -85,14 +85,12 @@ async function startMicStream() {
   //     /* handle the error */
   // }
 
-  console.log("constraints", constraints);
   let audio = navigator.mediaDevices.getUserMedia(constraints);
 
   console.log(audio);
 
   audio
     .then((stream) => {
-      console.log("Mic stream started");
       if (micStream) {
         micStream.getTracks().forEach((track) => track.stop());
       }
@@ -139,15 +137,115 @@ async function startRecording() {
   audioChunks = [];
   userInput.value = "";
 
-  chrome.tabCapture.capture(
-    { audio: true, video: false },
-    (capturedTabStream) => {
-      if (chrome.runtime.lastError) {
-        Logger.error(chrome.runtime.lastError);
+  const audioContext = new AudioContext();
+  const micSource = audioContext.createMediaStreamSource(micStream);
+  const destination = audioContext.createMediaStreamDestination();
+
+  micSource.connect(destination);
+
+  mediaRecorder = new MediaRecorder(destination.stream);
+
+  const silenceDetector = new SilenceDetector(config);
+
+  mediaRecorder.ondataavailable = (event) => {
+    audioChunks.push(event.data);
+  };
+
+  mediaRecorder.onstop = async () => {
+    if (audioChunks.length > 0) {
+      const isAudioAvailable = await silenceDetector.isAudioAvailable(
+        audioChunks
+      );
+      Logger.log(
+        isAudioAvailable ? "Recording has sound" : "Recording is silent"
+      );
+
+      if (isAudioAvailable) {
+        let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        audioChunks = [];
+        convertAudioToText(audioBlob).then((result) => {
+          updateGUI(result.text);
+        });
+      }
+    }
+  };
+
+  if (config.REALTIME) {
+    scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+    micSource.connect(scriptProcessor);
+    scriptProcessor.connect(audioContext.destination);
+
+    let recordingStartTime = Date.now();
+    let minRecordingLength = config.REALTIME_RECODING_LENGTH * 1000;
+
+    scriptProcessor.onaudioprocess = function (event) {
+      const currentTime = Date.now();
+      const recordingDuration = currentTime - recordingStartTime;
+
+      if (recordingDuration < minRecordingLength) {
         return;
       }
 
-      tabStream = capturedTabStream;
+      const inputData = event.inputBuffer.getChannelData(0);
+
+      if (silenceDetector.detect(inputData, currentTime)) {
+        Logger.log("silence detected");
+        // Stop the current mediaRecorder
+        mediaRecorder.stop();
+
+        // Start a new mediaRecorder after a short delay
+        silenceTimeout = setTimeout(() => {
+          mediaRecorder.start();
+          recordingStartTime = Date.now(); // Reset the recording start time
+          Logger.log("New recording started after silence");
+        }, 50); // 50ms delay before starting new recording
+      } else {
+        Logger.log("voice detected");
+      }
+    };
+  }
+
+  mediaRecorder.start();
+  audioInputSelect.disabled = true;
+  pauseButton.disabled = false;
+  isRecording = true;
+  recordButton.style.display = "none";
+  stopButton.style.display = "inline";
+}
+
+async function startRecordingOld() {
+  await loadConfigData();
+
+  audioChunks = [];
+  userInput.value = "";
+
+  const displayMediaOptions = {
+    video: {
+      displaySurface: "browser", // or "window" if you prefer
+    },
+    audio: true, // Enable audio capture from the tab in Chrome
+    systemAudio: "include",
+  };
+
+  navigator.mediaDevices
+    .getDisplayMedia(displayMediaOptions)
+    .then((stream) => {
+      // Do something with the stream, e.g., play it in an audio element
+
+      let getAudioTracks = stream.getAudioTracks();
+
+      console.log(getAudioTracks);
+
+      if (getAudioTracks.length == 0) {
+        return;
+      }
+
+      stream.getVideoTracks()[0].onended = () => {
+        console.log("User stopped sharing the screen/tab");
+        stopRecording();
+      };
+
+      tabStream = stream;
 
       const audioContext = new AudioContext();
       const micSource = audioContext.createMediaStreamSource(micStream);
@@ -236,8 +334,10 @@ async function startRecording() {
       isRecording = true;
       recordButton.style.display = "none";
       stopButton.style.display = "inline";
-    }
-  );
+    })
+    .catch((error) => {
+      console.error("Error getting desktop capture stream:", error);
+    });
 }
 
 async function stopRecording() {

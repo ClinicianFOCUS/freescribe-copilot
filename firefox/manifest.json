@@ -11,11 +11,6 @@
   "browser_action": {
     "default_title": "FreeScribe"
   },
-  "sidebar_action": {
-    "default_icon": "icons/star.png",
-    "default_title": "FreeScribe",
-    "default_panel": "index.html"
-  },
   "options_ui": {
     "page": "options.html",
     "browser_style": true

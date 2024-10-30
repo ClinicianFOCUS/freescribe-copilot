@@ -33,8 +33,6 @@ chrome.browserAction.onClicked.addListener(() => {
       width: 370,
       height: 700,
     },
-    function (w) {
-      console.log(w);
-    }
+    function (w) {}
   );
 });
