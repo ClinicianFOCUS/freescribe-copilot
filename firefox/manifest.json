@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+  "name": "FreeScribe",
+  "description": "Record and play audio from tab and microphone",
+  "version": "1.0",
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "54.0a1"
+    }
+  },
+  "browser_action": {
+    "default_title": "FreeScribe"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": true
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "permissions": ["storage", "tabs", "activeTab", "contextMenus"],
+  "commands": {
+    "_execute_sidebar_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      }
+    }
+  }
+}
