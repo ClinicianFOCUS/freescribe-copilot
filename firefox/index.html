@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FreeScribe</title>
+    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="fontawesom.min.css" />
+  </head>
+  <body>
+    <div class="popup-container">
+      <div class="container fade-in">
+        <h3>Select Audio Input</h3>
+        <select id="audioInputSelect" class="mb-3"></select>
+
+        <div id="volumeBar" class="mb-3">
+          <div id="volumeLevel"></div>
+        </div>
+
+        <div class="d-flex justify-content-between mb-3">
+          <button id="recordButton" class="flex-grow-1 me-2 btn-success">
+            <i class="fas fa-microphone"></i> Record
+          </button>
+
+          <button
+            id="stopButton"
+            style="display: none"
+            class="flex-grow-1 me-2 btn-danger"
+          >
+            <i class="fas fa-stop"></i> Stop
+          </button>
+
+          <button
+            id="pauseButton"
+            disabled="true"
+            class="flex-grow-1 me-2 btn-primary"
+          >
+            <i class="fas fa-pause"></i> Pause
+          </button>
+
+          <button
+            id="resumeButton"
+            style="display: none"
+            class="flex-grow-1 me-2 btn-success"
+          >
+            <i class="fas fa-play"></i> Resume
+          </button>
+        </div>
+
+        <textarea
+          id="userInput"
+          rows="5"
+          class="mb-3"
+          placeholder=""
+        ></textarea>
+        <button id="generateNotesButton" class="mb-3">
+          <i class="fas fa-file-alt"></i> Generate Notes
+        </button>
+
+        <pre id="notes" class="mt-3"></pre>
+
+        <div class="text-center mt-4">
+          <a href="#" id="toggleConfig" class="text-muted">
+            <i class="fas fa-cog"></i> Configuration
+          </a>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <p>
+          For more information, click
+          <a href="welcome.html" target="_blank">here</a>.
+        </p>
+      </div>
+    </div>
+
+    <script type="module" src="index.js"></script>
+  </body>
+</html>
