@@ -16,7 +16,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 function openSidePanel(windowId) {
-  chrome.sidePanel.open({ windowId: windowId });
+  return chrome.sidePanel.open({ windowId: windowId });
 }
 
 chrome.action.onClicked.addListener((tab) => {
@@ -27,5 +27,17 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "freescribeCopilot") {
     openSidePanel(tab.windowId);
+  }
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  switch (command) {
+    case "configure":
+      chrome.runtime.openOptionsPage?.() ||
+        window.open(chrome.runtime.getURL("options.html"));
+      break;
+    default:
+      chrome.runtime.sendMessage({ action: command });
+      break;
   }
 });

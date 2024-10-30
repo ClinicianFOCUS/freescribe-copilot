@@ -118,6 +118,10 @@ async function startMicStream() {
 }
 
 async function startRecording() {
+  if (isRecording) {
+    Logger.info("Recording already in progress");
+    return;
+  }
   await loadConfigData();
 
   audioChunks = [];
@@ -225,6 +229,11 @@ async function startRecording() {
 }
 
 async function stopRecording() {
+  if (!isRecording) {
+    Logger.info("No recording in progress");
+    return;
+  }
+
   if (scriptProcessor) {
     scriptProcessor.disconnect();
     scriptProcessor = null;
@@ -384,6 +393,18 @@ generateNotesButton.addEventListener("click", () => {
   }
 
   generateNotes(transcribedText);
+});
+
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log(request);
+  if (request.action === "start_stop_recording") {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
 });
 
 init();
