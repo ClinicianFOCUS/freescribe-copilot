@@ -62,7 +62,7 @@ async function loadExtension(tabId) {
 
     // Inject the CSS into the current tab
     await chrome.scripting.insertCSS({
-        target: {tabId: tabId, allFrames: true}, files: ['main.css']
+        target: {tabId: tabId, allFrames: true}, files: ['content.css']
     });
 
     // Inject the content script into the current tab
