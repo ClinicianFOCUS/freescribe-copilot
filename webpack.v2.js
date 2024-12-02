@@ -8,7 +8,7 @@ module.exports = (env) => {
     return {
         entry: {
             background: "./src-v2/background.js",
-            content: "./src-v2/content.js",
+            content: ["./src-v2/content.js", "./src-v2/content.scss"],
             options: "./src-v2/options.js",
             welcome: "./src-v2/welcome.js",
             offscreen: "./src-v2/offscreen.js",
@@ -52,7 +52,15 @@ module.exports = (env) => {
                         to: "",
                     },
                     {
+                        from: "node_modules/bootstrap/dist/css/bootstrap.css",
+                        to: "",
+                    },
+                    {
                         from: "node_modules/toastr/build/toastr.min.js",
+                        to: "",
+                    },
+                    {
+                        from: "node_modules/toastr/build/toastr.css",
                         to: "",
                     },
                     {
