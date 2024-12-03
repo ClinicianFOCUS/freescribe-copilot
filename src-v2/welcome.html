@@ -4,9 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Welcome to FreeScribe</title>
+    <link rel="stylesheet" href="bootstrap.css" />
     <link rel="stylesheet" href="main.css" />
   </head>
-  <body>
+  <body class="free-scribe">
     <div class="welcome-container">
       <div class="content">
         <h1 class="mb-4">Welcome to FreeScribe</h1>
@@ -21,7 +22,7 @@
           <li>
             <strong>Flexible Processing Options</strong>
             <p>
-              Choose between local or server-based transcription and LLM
+              Choose between <strong>local</strong> or <strong>server-based</strong> transcription and LLM
               processing to suit your needs
             </p>
           </li>
@@ -98,23 +99,14 @@
 
         <p class="mb-4">
           For the best experience, we recommend configuring FreeScribe to work
-          with your preferred settings <a href="#" id="configureLink">here</a>.
+          with your preferred settings <a href="#" id="configureLink" class="btn-lg">here</a>.
         </p>
 
-        <h2 class="mb-3">Installation Prerequisites:</h2>
+        <h2 class="mb-3">Installations (Optional):</h2>
         <p class="mb-4">
-          Before using FreeScribe, ensure you have the following software
-          installed:
+          If using <strong>server-based</strong> processing, you will need to install the following dependencies:
         </p>
         <ul class="mb-4">
-          <li>
-            <a
-              href="https://github.com/ClinicianFOCUS/FreeScribe"
-              target="_blank"
-              >FreeScribe</a
-            >: The main project repository. Please follow the installation
-            instructions provided in the repository.
-          </li>
           <li>
             <a
               href="https://github.com/ClinicianFOCUS/local-llm-container"
@@ -131,9 +123,16 @@
             >: Needed for audio transcription. Please refer to the repository
             for installation details.
           </li>
+          <li>
+            <a
+                    href="https://github.com/ClinicianFOCUS/FreeScribe"
+                    target="_blank"
+            >FreeScribe</a
+            >: The main project repository. Please follow the installation
+            instructions provided in the repository.
+          </li>
         </ul>
 
-        <h2 class="mb-3">Installation Steps:</h2>
         <p class="mb-4">
           For detailed installation steps, please refer to the README files in
           each of the above repositories.

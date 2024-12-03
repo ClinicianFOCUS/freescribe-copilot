@@ -4,7 +4,7 @@ import {saveNotesHistory} from "../src/history";
 
 async function init() {
     if (!document.getElementById("recording-screen")) {
-        const response = await fetch(chrome.runtime.getURL('/index.html'));
+        const response = await fetch(chrome.runtime.getURL('/content.html'));
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -16,6 +16,79 @@ async function init() {
         let config = await loadConfig();
 
         let logger = new Logger(config);
+
+        // Chat Icon Logic
+        const freeScribeBox = document.getElementById("free-scribe-box");
+        const freeScribeUi = document.getElementById("free-scribe-ui");
+
+        let isDragging = false;
+        let dragOffsetX, dragOffsetY, startPosX, startPosY;
+        let hasMoved = false;
+
+// Prevent text selection during drag
+        const preventSelection = (e) => e.preventDefault();
+
+// Make the chat icon draggable
+        freeScribeBox.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            dragOffsetX = e.clientX - freeScribeBox.getBoundingClientRect().left;
+            dragOffsetY = e.clientY - freeScribeBox.getBoundingClientRect().top;
+            startPosX = e.clientX;
+            startPosY = e.clientY;
+            hasMoved = false;
+            freeScribeBox.style.cursor = "grabbing";
+
+            // Prevent text selection
+            document.addEventListener("selectstart", preventSelection);
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+                const moveX = Math.abs(e.clientX - startPosX);
+                const moveY = Math.abs(e.clientY - startPosY);
+                if (moveX > 5 || moveY > 5) {
+                    hasMoved = true;
+                }
+                freeScribeBox.style.left = e.clientX - dragOffsetX + "px";
+                freeScribeBox.style.top = e.clientY - dragOffsetY + "px";
+                freeScribeBox.style.right = "auto";
+                freeScribeBox.style.bottom = "auto";
+
+                // Reposition chat window
+                const chatBoxRect = freeScribeBox.getBoundingClientRect();
+                if (!freeScribeUi.classList.contains("hidden")) {
+                    freeScribeUi.style.bottom = window.innerHeight - chatBoxRect.top + 10 + "px";
+                    freeScribeUi.style.right = window.innerWidth - chatBoxRect.right + 10 + "px";
+                }
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                isDragging = false;
+                freeScribeBox.style.cursor = "pointer";
+
+                // Remove text selection prevention
+                document.removeEventListener("selectstart", preventSelection);
+
+                if (!hasMoved) {
+                    // Open/Close chat window
+                    toggleChatUI();
+                }
+            }
+        });
+
+// Toggle Chat UI
+        function toggleChatUI() {
+            if (freeScribeUi.classList.contains("hidden")) {
+                const chatBoxRect = freeScribeBox.getBoundingClientRect();
+                freeScribeUi.style.bottom = window.innerHeight - chatBoxRect.top + 10 + "px";
+                freeScribeUi.style.right = window.innerWidth - chatBoxRect.right + 10 + "px";
+                freeScribeUi.classList.remove("hidden");
+            } else {
+                freeScribeUi.classList.add("hidden");
+            }
+        }
 
         const statusLabel = document.getElementById("status");
 
