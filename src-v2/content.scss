@@ -1,0 +1,172 @@
+.free-scribe {
+  * {
+    all: unset;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  @import "../node_modules/bootstrap/scss/bootstrap";
+
+  // Custom variables
+  $primary-color: #007bff;
+  $secondary-color: #6c757d;
+  $background-color: #f8f9fa;
+  $border-color: #dee2e6;
+
+  // Common styles
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: $background-color;
+  }
+
+  select,
+  button,
+  textarea,
+  input {
+    margin-bottom: 1rem;
+  }
+
+  button {
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    &:disabled {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .visible {
+    display: block;
+  }
+
+  .loader {
+    display: none; /* Hidden by default */
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+  }
+
+  .textarea-container {
+    position: relative; /* Position relative to allow absolute positioning of loader */
+  }
+
+  #notes {
+    background-color: white;
+    padding: 15px;
+    border: 1px solid $border-color;
+    border-radius: 0.25rem;
+    width: 100%;
+    text-wrap: wrap;
+    margin-top: 1rem;
+    display: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    max-height: 200px;
+  }
+
+  #recording-screen {
+    font-family: Arial, sans-serif;
+    //width: 200px;
+    //position: fixed;
+    //bottom: 10px;
+    //right: 10px;
+    //z-index: 10000;
+    //background: #ffffff;
+    //border: 1px solid #ccc;
+    //border-radius: 8px;
+    padding: 15px;
+    //box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  #recording-screen button {
+    width: 100%;
+    padding: 8px 12px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  #free-scribe-box {
+    position: fixed;
+    bottom: 50px;
+    right: 50px;
+    width: 50px;
+    height: 50px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10000;
+    overflow: hidden;
+  }
+
+  #free-scribe-box img {
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Chat UI */
+  #free-scribe-ui {
+    position: fixed;
+    width: 280px;
+    height: auto;
+    background-color: #f9fafb;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 10001;
+  }
+
+  /* Chat Header */
+  .chat-header {
+    width: inherit;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-size: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .chat-header-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+
+  .show-history {
+    display: block;
+    width: 100%;
+  }
+
+  .show-history a {
+    text-align: center;
+    color: $primary-color;
+    text-decoration: none;
+    text-underline: $primary-color;
+  }
+
+  .show-history a:hover {
+    cursor: pointer;
+  }
+}
+

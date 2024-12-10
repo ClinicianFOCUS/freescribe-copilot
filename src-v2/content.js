@@ -4,7 +4,7 @@ import {saveNotesHistory} from "../src/history";
 
 async function init() {
     if (!document.getElementById("recording-screen")) {
-        const response = await fetch(chrome.runtime.getURL('/index.html'));
+        const response = await fetch(chrome.runtime.getURL('/content.html'));
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -17,6 +17,82 @@ async function init() {
 
         let logger = new Logger(config);
 
+        // Chat Icon Logic
+        const freeScribeBox = document.getElementById("free-scribe-box");
+        const freeScribeIcon = document.getElementById("free-scribe-icon");
+        const freeScribeUi = document.getElementById("free-scribe-ui");
+
+        freeScribeIcon.src = chrome.runtime.getURL("freescribe-round.png");
+
+        let isDragging = false;
+        let dragOffsetX, dragOffsetY, startPosX, startPosY;
+        let hasMoved = false;
+
+// Prevent text selection during drag
+        const preventSelection = (e) => e.preventDefault();
+
+// Make the chat icon draggable
+        freeScribeBox.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            dragOffsetX = e.clientX - freeScribeBox.getBoundingClientRect().left;
+            dragOffsetY = e.clientY - freeScribeBox.getBoundingClientRect().top;
+            startPosX = e.clientX;
+            startPosY = e.clientY;
+            hasMoved = false;
+            freeScribeBox.style.cursor = "grabbing";
+
+            // Prevent text selection
+            document.addEventListener("selectstart", preventSelection);
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+                const moveX = Math.abs(e.clientX - startPosX);
+                const moveY = Math.abs(e.clientY - startPosY);
+                if (moveX > 5 || moveY > 5) {
+                    hasMoved = true;
+                }
+                freeScribeBox.style.left = e.clientX - dragOffsetX + "px";
+                freeScribeBox.style.top = e.clientY - dragOffsetY + "px";
+                freeScribeBox.style.right = "auto";
+                freeScribeBox.style.bottom = "auto";
+
+                // Reposition chat window
+                const chatBoxRect = freeScribeBox.getBoundingClientRect();
+                if (!freeScribeUi.classList.contains("hidden")) {
+                    freeScribeUi.style.bottom = window.innerHeight - chatBoxRect.top + 10 + "px";
+                    freeScribeUi.style.right = window.innerWidth - chatBoxRect.right + 10 + "px";
+                }
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                isDragging = false;
+                freeScribeBox.style.cursor = "pointer";
+
+                // Remove text selection prevention
+                document.removeEventListener("selectstart", preventSelection);
+
+                if (!hasMoved) {
+                    // Open/Close chat window
+                    toggleChatUI();
+                }
+            }
+        });
+
+// Toggle Chat UI
+        let toggleChatUI = function () {
+            if (freeScribeUi.classList.contains("hidden")) {
+                const chatBoxRect = freeScribeBox.getBoundingClientRect();
+                freeScribeUi.style.bottom = window.innerHeight - chatBoxRect.top + 10 + "px";
+                freeScribeUi.style.right = window.innerWidth - chatBoxRect.right + 10 + "px";
+                freeScribeUi.classList.remove("hidden");
+            } else {
+                freeScribeUi.classList.add("hidden");
+            }
+        }
+
         const statusLabel = document.getElementById("status");
 
         let recordButton = document.getElementById("recordButton");
@@ -27,7 +103,7 @@ async function init() {
         let generateNotesButton = document.getElementById("generateNotesButton");
         let notesElement = document.getElementById("notes");
         let copyNotesButton = document.getElementById("copyNotesButton");
-        let showHistory = document.getElementById("showHistory");
+        let openPage = document.getElementsByClassName("openPage");
 
         // Request tab audio capture
         const captureTabAudio = async () => {
@@ -87,13 +163,17 @@ async function init() {
             copyNotesToClipboard(notesElement.textContent);
         });
 
-        // Show history
-        showHistory.addEventListener("click", (e) => {
+        // Open Page
+        const openPageEvent = (e) => {
             e.preventDefault();
             chrome.runtime.sendMessage({
-                target: 'background', type: 'show-history'
+                target: 'background', type: 'show-page', page: e.target.dataset.page
             });
-        });
+        }
+
+        for (let index = 0; index < openPage.length; index++) {
+            openPage[index].addEventListener("click", openPageEvent);
+        }
 
         // Helper function to update status
         const updateStatus = (text, color = "#555") => {
@@ -101,7 +181,7 @@ async function init() {
             statusLabel.style.color = color;
         };
 
-        let copyNotesToClipboard = (text, source = "notes") =>{
+        let copyNotesToClipboard = (text, source = "notes") => {
             if (text.trim() === "") {
                 // toastr.info(`No ${source} to copy.`);
                 return;
@@ -118,6 +198,18 @@ async function init() {
                 });
         }
 
+        let defaultState = () => {
+            recordButton.disabled = false;
+            stopButton.style.display = "none";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "none";
+            userInput.style.display = "none";
+            generateNotesButton.style.display = "none";
+            copyNotesButton.style.display = "none";
+            notesElement.textContent = "";
+            notesElement.style.display = "none";
+        }
+
         // Listen for messages from the background script
         chrome.runtime.onMessage.addListener((message) => {
             if (message.target === "content") {
@@ -127,8 +219,8 @@ async function init() {
 
                     if (status === "recording") {
                         recordButton.style.display = "none";
-                        stopButton.style.display = "inline";
-                        pauseButton.style.display = "inline";
+                        stopButton.style.display = "block";
+                        pauseButton.style.display = "block";
                         resumeButton.style.display = "none";
                         userInput.style.display = "none";
                         generateNotesButton.style.display = "none";
@@ -137,20 +229,20 @@ async function init() {
                         copyNotesButton.style.display = "none";
                     } else if (status === "paused") {
                         pauseButton.style.display = "none";
-                        resumeButton.style.display = "inline";
+                        resumeButton.style.display = "block";
                     } else if (status === "transcribing") {
                         recordButton.style.display = "none";
                         stopButton.style.display = "none";
                         pauseButton.style.display = "none";
                     } else if (status === "stopped" || status === "transcribing-complete") {
-                        recordButton.style.display = "inline";
+                        recordButton.style.display = "block";
                         stopButton.style.display = "none";
                         pauseButton.style.display = "none";
                         resumeButton.style.display = "none";
 
                         if (message.data?.transcription) {
-                            // userInput.style.display = "inline";
-                            // generateNotesButton.style.display = "inline";
+                            userInput.style.display = "block";
+                            generateNotesButton.style.display = "block";
                             userInput.value = message.data.transcription;
                         }
                     } else if (status === "pre-processing" || status === "processing" || status === "post-processing") {
@@ -159,35 +251,25 @@ async function init() {
                     } else if (status === "note-generated") {
                         recordButton.disabled = false;
                         generateNotesButton.disabled = false;
-                        recordButton.style.display = "inline";
+                        recordButton.style.display = "block";
                         stopButton.style.display = "none";
                         pauseButton.style.display = "none";
                         resumeButton.style.display = "none";
-                        // userInput.style.display = "inline";
-                        // generateNotesButton.style.display = "inline";
+                        userInput.style.display = "block";
+                        generateNotesButton.style.display = "block";
 
                         if (message.data?.notes) {
                             notesElement.textContent = message.data.notes;
                             saveNotesHistory(message.data.notes);
                             notesElement.style.display = "block";
-                            copyNotesButton.style.display = "inline";
+                            copyNotesButton.style.display = "block";
                         }
                     } else if (status === "error") {
-                        recordButton.style.display = "inline";
-                        recordButton.disabled = false;
-                        stopButton.style.display = "none";
-                        pauseButton.style.display = "none";
-                        resumeButton.style.display = "none";
-                        userInput.style.display = "none";
-                        generateNotesButton.style.display = "none";
+                        defaultState();
                     }
                 } else if (message.type === "status") {
                     if (message.data.ready) {
-                        recordButton.disabled = false;
-                        userInput.style.display = "none";
-                        generateNotesButton.style.display = "none";
-                        notesElement.textContent = "";
-                        notesElement.style.display = "none";
+                        defaultState();
                         updateStatus("Ready to record", "#28a745");
                     } else {
                         recordButton.disabled = true;
@@ -196,6 +278,8 @@ async function init() {
                 }
             }
         });
+
+        defaultState();
 
         // check status
         chrome.runtime.sendMessage({

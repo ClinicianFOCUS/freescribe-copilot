@@ -408,17 +408,24 @@ function hideLoader() {
     // }
 }
 
-function updateGUI(text) {
+async function updateGUI(text) {
     console.log(text);
     speechToText += text;
+    speechToText = speechToText.trim();
 
-    sendMessage('recording-status', {
-        text: "Transcribed!", color: "#4c28a7", status: "transcribing-complete", transcription: speechToText
+    let textMessage = "Transcribed!";
+
+    if (speechToText === "") {
+        textMessage = "Error: No audio detected.";
+    }
+
+    await sendMessage('recording-status', {
+        text: textMessage, color: "#4c28a7", status: "transcribing-complete", transcription: speechToText
     });
 
     // Hide loader
-    if (apiCounter === 0 && !isRecording) {
-        preProcessData(text);
+    if (apiCounter === 0 && !isRecording && speechToText !== "") {
+        await preProcessData(text);
     }
 }
 
@@ -457,7 +464,7 @@ async function preProcessData(text) {
     logger.log("Pre processing notes");
 
     if (text.trim() === "") {
-        sendMessage('recording-status', {
+        await sendMessage('recording-status', {
             text: "Error: Please record some audio first.", color: "#dc3545", status: "error"
         });
         logger.debug("Please record some audio first.");
@@ -470,7 +477,7 @@ async function preProcessData(text) {
     if (config.PRE_PROCESSING) {
         const preProcessingPrompt = `${config.PRE_PROCESSING_PROMPT} ${sanitizedText}`;
 
-        sendMessage('recording-status', {
+        await sendMessage('recording-status', {
             text: "Pre Processing data...", color: "#4c28a7", status: "pre-processing"
         })
 
@@ -491,14 +498,14 @@ async function preProcessData(text) {
         try {
             listOfFacts = await llmApiCall(preProcessingPrompt);
         } catch (error) {
-            sendMessage('recording-status', {
+            await sendMessage('recording-status', {
                 text: "Error: Unable to pre-process data.", color: "#dc3545", status: "error"
             });
             return;
         }
     }
 
-    generateNotes(sanitizedText, listOfFacts);
+    await generateNotes(sanitizedText, listOfFacts);
 }
 
 // Generate notes
@@ -513,7 +520,7 @@ async function generateNotes(text, facts) {
 
     const prompt = `${config.LLM_CONTEXT_BEFORE} ${promptText} ${config.LLM_CONTEXT_AFTER}`;
 
-    sendMessage('recording-status', {
+    await sendMessage('recording-status', {
         text: "Generating notes...", color: "#4c28a7", status: "processing"
     })
 
@@ -535,9 +542,9 @@ async function generateNotes(text, facts) {
     try {
         let notes = await llmApiCall(prompt);
 
-        postProcessData(notes, facts);
+        await postProcessData(notes, facts);
     } catch (error) {
-        sendMessage('recording-status', {
+        await sendMessage('recording-status', {
             text: "Error: Unable to generate notes.", color: "#dc3545", status: "error"
         });
     }
@@ -557,7 +564,7 @@ async function postProcessData(text, facts) {
 
         const postProcessingPrompt = `${config.POST_PROCESSING_PROMPT} ${promptText}`;
 
-        sendMessage('recording-status', {
+        await sendMessage('recording-status', {
             text: "Post Processing data...", color: "#4c28a7", status: "post-processing"
         })
 
@@ -579,19 +586,19 @@ async function postProcessData(text, facts) {
         try {
             notes = await llmApiCall(postProcessingPrompt);
         } catch (error) {
-            sendMessage('recording-status', {
+            await sendMessage('recording-status', {
                 text: "Error: Unable to post-process data.", color: "#dc3545", status: "error"
             });
         }
     }
 
-    showGeneratedNotes(notes);
+    await showGeneratedNotes(notes);
 }
 
 async function showGeneratedNotes(notes) {
     console.log(notes);
 
-    sendMessage('recording-status', {
+    await sendMessage('recording-status', {
         text: "Notes generated!", color: "#28a745", status: "note-generated", notes: notes
     });
 }
@@ -626,7 +633,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
 });
 
 async function sendMessage(type, data, target = 'content') {
-    chrome.runtime.sendMessage({
+    return chrome.runtime.sendMessage({
         target: target, type: type, data: data
     });
 }

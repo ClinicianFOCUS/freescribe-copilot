@@ -50,7 +50,9 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "index.html"
+        "*.html",
+        "*.css",
+        "*.png"
       ],
       "matches": [
         "http://*/*",
