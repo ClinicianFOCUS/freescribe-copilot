@@ -1,7 +1,9 @@
 import {getHistory} from "../src/history";
 
-
+// Initialize the history page
+// This function initializes the history page by fetching the notes history and rendering it in the accordion.
 async function init(){
+    // Set the toastr options
     toastr.options = {
         positionClass: "toast-bottom-center",
         showDuration: "300",
@@ -10,8 +12,10 @@ async function init(){
         extendedTimeOut: "1000",
     };
 
+    // Get the notes history
     let notes_history = await getHistory();
 
+    // ID for the history accordion elementS
     const accordionId = "historyAccordion";
 
     let html = ``;
@@ -19,6 +23,7 @@ async function init(){
     for (let index = 0; index < notes_history.length; index++) {
         const historyAccordion = notes_history[index];
 
+        // Format the date and time to a readable format
         let dateTime = new Date(historyAccordion.time).toLocaleString();
 
         html += `<div class="accordion-item">
@@ -38,10 +43,13 @@ async function init(){
               </div>`;
     }
 
+    // Render the history accordion
     document.getElementById(accordionId).innerHTML = html;
 
+    // Get the copy history buttons to add the click event
     let copyHistoryButton = document.getElementsByClassName("copy-history-btn");
 
+    // Function to copy the history notes to the clipboard
     function copyHistory(event) {
         let historyNotesId = event.currentTarget.getAttribute("data-copy-id");
 
@@ -56,6 +64,7 @@ async function init(){
 
     }
 
+    // Add the click event to the copy history buttons
     for (let index = 0; index < copyHistoryButton.length; index++) {
         copyHistoryButton[index].addEventListener("click", copyHistory);
     }

@@ -24,14 +24,17 @@ async function init() {
 
         freeScribeIcon.src = chrome.runtime.getURL("freescribe-round.png");
 
+        document.getElementById('refresh-icon').src = chrome.runtime.getURL("refresh.svg");
+
+        let isRecording = false;
         let isDragging = false;
         let dragOffsetX, dragOffsetY, startPosX, startPosY;
         let hasMoved = false;
 
-// Prevent text selection during drag
+        // Prevent text selection during drag
         const preventSelection = (e) => e.preventDefault();
 
-// Make the chat icon draggable
+        // Make the chat icon draggable
         freeScribeBox.addEventListener("mousedown", (e) => {
             isDragging = true;
             dragOffsetX = e.clientX - freeScribeBox.getBoundingClientRect().left;
@@ -81,7 +84,7 @@ async function init() {
             }
         });
 
-// Toggle Chat UI
+        // Toggle Chat UI
         let toggleChatUI = function () {
             if (freeScribeUi.classList.contains("hidden")) {
                 const chatBoxRect = freeScribeBox.getBoundingClientRect();
@@ -104,6 +107,8 @@ async function init() {
         let notesElement = document.getElementById("notes");
         let copyNotesButton = document.getElementById("copyNotesButton");
         let openPage = document.getElementsByClassName("openPage");
+        let audioDeviceSelect = document.getElementById("audioDeviceSelect");
+        let audioDeviceSelectRefresh = document.getElementById('audioDeviceSelectRefresh');
 
         // Start recording
         recordButton.addEventListener("click", async () => {
@@ -181,15 +186,10 @@ async function init() {
         }
 
         let defaultState = () => {
-            recordButton.disabled = false;
-            stopButton.style.display = "none";
-            pauseButton.style.display = "none";
-            resumeButton.style.display = "none";
-            userInput.style.display = "none";
-            generateNotesButton.style.display = "none";
-            copyNotesButton.style.display = "none";
-            notesElement.textContent = "";
-            notesElement.style.display = "none";
+            hideAllButtons();
+            hideTranscription();
+            hideNotes();
+            disableAudioDeviceSelect();
         }
 
         let getAudioDevices = () => {
@@ -199,8 +199,6 @@ async function init() {
         }
 
         let setAudioDeviceList = (audioDevices) => {
-            let audioDeviceSelect = document.getElementById("audioDeviceSelect");
-
             audioDeviceSelect.innerHTML = "";
             audioDevices.forEach((device) => {
                 let option = document.createElement("option");
@@ -217,82 +215,162 @@ async function init() {
             });
         }
 
+        const showRecordButton = () => {
+            recordButton.style.display = "block";
+            stopButton.style.display = "none";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "none";
+        }
+
+        const showStopButton = () => {
+            recordButton.style.display = "none";
+            stopButton.style.display = "block";
+            pauseButton.style.display = "block";
+            resumeButton.style.display = "none";
+        }
+
+        const showResumeButton = () => {
+            recordButton.style.display = "none";
+            stopButton.style.display = "block";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "block";
+        }
+
+        const hideAllButtons = () => {
+            recordButton.style.display = "none";
+            stopButton.style.display = "none";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "none";
+            generateNotesButton.style.display = "none";
+            copyNotesButton.style.display = "none";
+        }
+
+        const showTranscription = (transcription) => {
+            userInput.style.display = "block";
+            generateNotesButton.style.display = "block";
+            userInput.value = transcription;
+        }
+
+        const hideTranscription = () => {
+            userInput.style.display = "none";
+            generateNotesButton.style.display = "none";
+        }
+
+        const showNotes = (notes) => {
+            notesElement.textContent = notes;
+            notesElement.style.display = "block";
+            copyNotesButton.style.display = "block";
+            saveNotesHistory(notes);
+        }
+
+        const hideNotes = () => {
+            notesElement.textContent = "";
+            notesElement.style.display = "none";
+            copyNotesButton.style.display = "none";
+        }
+
+        const disableAudioDeviceSelect = () => {
+            audioDeviceSelect.disabled = true;
+            audioDeviceSelectRefresh.disabled = true;
+        }
+
+        const enableAudioDeviceSelect = () => {
+            audioDeviceSelect.disabled = false;
+            audioDeviceSelectRefresh.disabled = false;
+        }
+
+        audioDeviceSelectRefresh.addEventListener('click', getAudioDevices);
+
+        const recordingStateHandler = {
+            "initializing": (data) => {
+                defaultState();
+                updateStatus("Initializing", "#007bff");
+            }, "loading": (data) => {
+                defaultState();
+                updateStatus("Loading", "#007bff");
+            }, "ready": (data) => {
+                showRecordButton();
+                enableAudioDeviceSelect();
+                updateStatus("Ready to record", "#28a745");
+            }, "recording": (data) => {
+                isRecording = true;
+                showStopButton();
+                hideTranscription();
+                hideNotes();
+                disableAudioDeviceSelect();
+                updateStatus("Recording", "#dc3545");
+            }, "paused": (data) => {
+                showResumeButton()
+                updateStatus("Paused", "#ffc107");
+            }, "recording-stopped": (data) => {
+                showRecordButton();
+                hideTranscription();
+                hideNotes();
+                updateStatus("Recording stopped", "#007bff");
+            }, "transcribing": (data) => {
+                hideAllButtons();
+                updateStatus("Transcribing", "#007bff");
+            }, "transcription-complete": (data) => {
+                showTranscription(data.transcription);
+                generateNotesButton.disabled = false;
+                updateStatus("Transcription complete", "#28a745");
+            }, "realtime-transcribing": (data) => {
+                showTranscription(data.transcription);
+                generateNotesButton.disabled = true;
+                updateStatus("Realtime transcription", "#007bff");
+            }, "pre-processing-prompt": (data) => {
+                generateNotesButton.disabled = true;
+                showTranscription(data.transcription);
+                updateStatus("Pre-processing", "#007bff");
+            }, "generating-notes": (data) => {
+                generateNotesButton.disabled = true;
+                showTranscription(data.transcription);
+                updateStatus("Generating notes", "#007bff");
+            }, "post-processing-prompt": (data) => {
+                generateNotesButton.disabled = true;
+                showTranscription(data.transcription);
+                updateStatus("Post-processing", "#007bff");
+            }, "complete": (data) => {
+                isRecording = false;
+                showRecordButton();
+                showTranscription(data.transcription);
+                showNotes(data.notes);
+                enableAudioDeviceSelect();
+                updateStatus("Processing complete", "#28a745");
+            },
+            "error": (data) => {
+                isRecording = false;
+                showRecordButton();
+                enableAudioDeviceSelect();
+                updateStatus(`Error: ${data.message}` , "#dc3545");
+            }
+        }
+
+        const messageHandler = {
+            "recorder-state": (message) => {
+                const {state, data} = message;
+                console.log("Recorder state: ", state, data);
+                let handler = recordingStateHandler[state];
+                handler?.(data);
+            },
+            "audio-devices": setAudioDeviceList,
+            "close-extension": (data) => {
+                // destroy the chat window and icon
+                document.getElementById("free-scribe-extension").remove();
+            }
+        }
+
         // Listen for messages from the background script
         chrome.runtime.onMessage.addListener((message) => {
             if (message.target === "content") {
-                if (message.type === "recording-status") {
-                    let {text, color, status} = message.data;
-                    updateStatus(text, color);
-
-                    if (status === "recording") {
-                        recordButton.style.display = "none";
-                        stopButton.style.display = "block";
-                        pauseButton.style.display = "block";
-                        resumeButton.style.display = "none";
-                        userInput.style.display = "none";
-                        generateNotesButton.style.display = "none";
-                        notesElement.textContent = "";
-                        notesElement.style.display = "none";
-                        copyNotesButton.style.display = "none";
-                    } else if (status === "paused") {
-                        pauseButton.style.display = "none";
-                        resumeButton.style.display = "block";
-                    } else if (status === "transcribing") {
-                        recordButton.style.display = "none";
-                        stopButton.style.display = "none";
-                        pauseButton.style.display = "none";
-                    } else if (status === "stopped" || status === "transcribing-complete") {
-                        if (message.data?.realtime) {
-                            userInput.style.display = "block";
-                            userInput.value = message.data.transcription;
-                            return;
-                        }
-
-                        recordButton.style.display = "block";
-                        stopButton.style.display = "none";
-                        pauseButton.style.display = "none";
-                        resumeButton.style.display = "none";
-
-                        if (message.data?.transcription) {
-                            userInput.style.display = "block";
-                            generateNotesButton.style.display = "block";
-                            userInput.value = message.data.transcription;
-                        }
-                    } else if (status === "pre-processing" || status === "processing" || status === "post-processing") {
-                        recordButton.disabled = true;
-                        generateNotesButton.disabled = true;
-                    } else if (status === "note-generated") {
-                        recordButton.disabled = false;
-                        generateNotesButton.disabled = false;
-                        recordButton.style.display = "block";
-                        stopButton.style.display = "none";
-                        pauseButton.style.display = "none";
-                        resumeButton.style.display = "none";
-                        userInput.style.display = "block";
-                        generateNotesButton.style.display = "block";
-
-                        if (message.data?.notes) {
-                            notesElement.textContent = message.data.notes;
-                            saveNotesHistory(message.data.notes);
-                            notesElement.style.display = "block";
-                            copyNotesButton.style.display = "block";
-                        }
-                    } else if (status === "error") {
-                        defaultState();
-                    }
-                } else if (message.type === "status") {
-                    if (message.data.ready) {
-                        defaultState();
-                        updateStatus("Ready to record", "#28a745");
-                    } else {
-                        recordButton.disabled = true;
-                        updateStatus("Audio capture not ready", "#dc3545");
-                    }
-                } else if (message.type === 'audio-devices') {
-                    setAudioDeviceList(message.data);
-                } else if (message.type === 'close-extension') {
-                    // destroy the chat window and icon
-                    document.getElementById("free-scribe-extension").remove();
+                const {type, data} = message;
+                let handler = messageHandler[type];
+                handler?.(data);
+            } else if (message?.command === 'start_stop_recording') {
+                if (isRecording) {
+                    stopButton.click();
+                } else {
+                    recordButton.click();
                 }
             }
         });
@@ -301,13 +379,11 @@ async function init() {
 
         // check status
         chrome.runtime.sendMessage({
-            target: 'offscreen', type: 'check-status'
+            target: 'offscreen', type: 'init'
         });
 
         // get audio devices
         getAudioDevices();
-
-        document.getElementById('audioDeviceSelectRefresh').addEventListener('click', getAudioDevices);
     }
 }
 

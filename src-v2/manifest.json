@@ -52,6 +52,7 @@
       "resources": [
         "*.html",
         "*.css",
+        "*.svg",
         "*.png"
       ],
       "matches": [

@@ -10,19 +10,13 @@
         </div>
         <div id="recording-screen">
             <div class="config-item">
-                <label for="audioDeviceSelect">Audio Device:</label>
                 <div class="d-flex">
                     <div class="me-2">
-                        <select
-                                id="audioDeviceSelect"
-                                class="form-select"
-                        >
-                            <!-- Options will be populated dynamically -->
-                        </select>
+                        <select id="audioDeviceSelect" class="custom-select"></select>
                     </div>
                     <div class="me-2">
                         <button type="button" id="audioDeviceSelectRefresh" class="btn btn-primary">
-                            <i class="fas fa-sync-alt"></i>
+                            <img id="refresh-icon">
                         </button>
                     </div>
                 </div>

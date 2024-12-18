@@ -1,3 +1,8 @@
+// Description: Configuration file for the extension
+// The configuration file is used to store the extension settings and options.
+// The default configuration is loaded when the extension is installed and can be modified by the user.
+// The configuration is saved in the Chrome storage API and can be accessed by the extension's background script.
+
 export const defaultConfig = {
   // Transcription
   TRANSCRIPTION_LOCAL: true,
@@ -42,6 +47,7 @@ export const defaultConfig = {
     "Please check your work from the list of facts and ensure the SOAP note is accurate based on the information. Please ensure the data is accurate in regards to the list of facts.",
 };
 
+// Function: loadConfig - Load the configuration from the Chrome storage API
 export function loadConfig() {
   return new Promise((resolve) => {
     chrome.storage.sync.get(["config"], function (result) {
@@ -50,12 +56,14 @@ export function loadConfig() {
   });
 }
 
+// Function: getConfig - Get a specific configuration value
 export async function getConfig(key) {
   let config = await loadConfig();
 
   return config[key];
 }
 
+// Function: saveConfig - Save the configuration to the Chrome storage API
 export function saveConfig(config) {
   return new Promise((resolve) => {
     chrome.storage.sync.set({ config: config }, resolve);

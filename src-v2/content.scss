@@ -170,5 +170,18 @@
   .show-history a:hover {
     cursor: pointer;
   }
+
+  .custom-select {
+    width: 100%;
+    margin-top: 5px;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    color: #212529;
+    background-color: #fff;
+  }
+
+  .custom-select select:disabled {
+    background-color: #f8f9fa;
+  }
 }
 
