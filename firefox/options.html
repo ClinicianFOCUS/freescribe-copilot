@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FreeScribe - Options</title>
+    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="fontawesom.min.css" />
+    <script src="jquery-3.7.1.min.js"></script>
+    <script src="jquery.validate.min.js"></script>
+  </head>
+  <body>
+    <div class="options-container">
+      <h1 class="mb-4">FreeScribe Configuration</h1>
+
+      <form id="configForm">
+        <div id="configSection">
+          <h3>
+            Transcription Settings
+            <a
+              href="https://github.com/ClinicianFOCUS/speech2text-container"
+              target="_blank"
+              class="help-icon"
+              title="Help"
+            >
+              <i class="fas fa-question-circle"></i>
+            </a>
+          </h3>
+          <div class="config-item d-flex align-items-center">
+            <div class="me-2">
+              <label for="transcriptionHost">Host:</label>
+              <input
+                type="text"
+                id="transcriptionHost"
+                name="transcriptionHost"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="me-2">
+              <label for="transcriptionPort">Port:</label>
+              <input
+                type="number"
+                id="transcriptionPort"
+                name="transcriptionPort"
+                class="form-control"
+                min="0"
+                max="65535"
+                required
+              />
+            </div>
+            <div class="me-2">
+              <label for="transcriptionSecure">Is Secure Host?</label>
+              <select
+                id="transcriptionSecure"
+                name="transcriptionSecure"
+                class="form-select"
+              >
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+          <div class="config-item">
+            <label for="transcriptionApiKey"
+              >Transcription Server API Key:</label
+            >
+            <input
+              type="text"
+              id="transcriptionApiKey"
+              name="transcriptionApiKey"
+              class="form-control"
+            />
+          </div>
+
+          <h3 class="mt-4">
+            Language Model Settings
+            <a
+              href="https://github.com/ClinicianFOCUS/local-llm-container"
+              target="_blank"
+              class="help-icon"
+              title="Help"
+            >
+              <i class="fas fa-question-circle"></i>
+            </a>
+          </h3>
+          <div class="config-item d-flex align-items-center">
+            <div class="me-2">
+              <label for="llmHost">Host:</label>
+              <input
+                type="text"
+                id="llmHost"
+                name="llmHost"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="me-2">
+              <label for="llmPort">Port:</label>
+              <input
+                type="number"
+                id="llmPort"
+                name="llmPort"
+                class="form-control"
+                min="0"
+                max="65535"
+                required
+              />
+            </div>
+            <div class="me-2">
+              <label for="llmSecure">Is Secure Host?</label>
+              <select id="llmSecure" name="llmSecure" class="form-select">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+          <div class="config-item">
+            <label for="llmModel">LLM Model:</label>
+            <input
+              type="text"
+              id="llmModel"
+              name="llmModel"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="config-item">
+            <label for="llmContextBefore">LLM Context Before:</label>
+            <textarea
+              id="llmContextBefore"
+              name="llmContextBefore"
+              rows="3"
+              class="form-control"
+            ></textarea>
+          </div>
+          <div class="config-item">
+            <label for="llmContextAfter">LLM Context After:</label>
+            <textarea
+              id="llmContextAfter"
+              name="llmContextAfter"
+              rows="3"
+              class="form-control"
+            ></textarea>
+          </div>
+
+          <h3 class="mt-4">Real-time Processing Settings</h3>
+          <div class="config-item form-check">
+            <input
+              type="checkbox"
+              id="realtimeToggle"
+              name="realtimeToggle"
+              class="form-check-input"
+            />
+            <label for="realtimeToggle" class="form-check-label"
+              >Enable Real-time Processing</label
+            >
+          </div>
+          <div class="config-item">
+            <label for="realtimeRecordingLength"
+              >Realtime Recording Length (seconds):</label
+            >
+            <input
+              type="number"
+              id="realtimeRecordingLength"
+              name="realtimeRecordingLength"
+              class="form-control"
+              min="1"
+              required
+            />
+          </div>
+          <div class="config-item">
+            <label for="silenceThreshold">Silence Threshold:</label>
+            <input
+              type="number"
+              id="silenceThreshold"
+              name="silenceThreshold"
+              class="form-control"
+              step="0.01"
+              min="0"
+              required
+            />
+          </div>
+          <div class="config-item">
+            <label for="minSilenceDuration"
+              >Minimum Silence Duration (ms):</label
+            >
+            <input
+              type="number"
+              id="minSilenceDuration"
+              name="minSilenceDuration"
+              class="form-control"
+              min="0"
+              required
+            />
+          </div>
+
+          <h3 class="mt-4">Logging Settings</h3>
+          <div class="config-item form-check">
+            <input
+              type="checkbox"
+              id="debugMode"
+              name="debugMode"
+              class="form-check-input"
+            />
+            <label for="debugMode" class="form-check-label"
+              >Enable Debug Mode</label
+            >
+          </div>
+
+          <div class="mt-4 d-flex justify-content-end">
+            <button type="submit" id="saveConfig" class="btn btn-primary me-3">
+              Save
+            </button>
+            <button type="button" id="closeButton" class="btn btn-danger">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="mt-4 text-center">
+        <p>
+          For more information, visit the
+          <a href="https://github.com/ClinicianFOCUS/FreeScribe" target="_blank"
+            >FreeScribe Client</a
+          >.
+        </p>
+      </div>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

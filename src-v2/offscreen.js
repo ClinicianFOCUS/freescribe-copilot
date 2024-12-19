@@ -17,12 +17,82 @@ let isPause = false;
 let scriptProcessor;
 let silenceTimeout;
 let apiCounter = 0;
-let isReady = false;
 let speechToText = '';
 
 let audioDeviceId = null;
 
+const RecorderState = {
+    INITIALIZING: 'initializing',
+    LOADING: 'loading',
+    READY: 'ready',
+    RECORDING: 'recording',
+    PAUSED: 'paused',
+    RECORDING_STOPPED: 'recording-stopped',
+    TRANSCRIBING: 'transcribing',
+    TRANSCRIPTION_COMPLETE: 'transcription-complete',
+    REALTIME_TRANSCRIBING: 'realtime-transcribing',
+    PRE_PROCESSING_PROMPT: 'pre-processing-prompt',
+    GENERATING_NOTES: 'generating-notes',
+    POST_PROCESSING_PROMPT: 'post-processing-prompt',
+    COMPLETE: 'complete',
+    ERROR: 'error',
+};
+
+let defaultData = {
+    transcription: '',
+    notes: '',
+    message: '',
+}
+
+let state = {
+    state: RecorderState.INITIALIZING,
+    data: defaultData,
+};
+
+async function setState(newState, data = null) {
+    let newData = state.data
+
+    if (data?.transcription) {
+        newData.transcription = data.transcription;
+    }
+
+    if (data?.notes) {
+        newData.notes = data.notes;
+    }
+
+    if (data?.message) {
+        newData.message = data.message;
+    }
+
+    if (newState === RecorderState.INITIALIZING ||
+        newState === RecorderState.LOADING ||
+        newState === RecorderState.READY ||
+        newState === RecorderState.RECORDING) {
+        console.log("Resetting data");
+        newData = defaultData;
+    }
+
+    state = {
+        state: newState,
+        data: newData,
+    };
+    await sendState();
+}
+
+async function sendState() {
+    await sendMessage('recorder-state', state);
+}
+
 async function init() {
+    if (state.state !== RecorderState.INITIALIZING) {
+        sendState();
+        return;
+    }
+
+    await setState(RecorderState.INITIALIZING);
+    isPause = false;
+    isRecording = false;
+
     config = await loadConfigData();
     console.log(config);
     logger = new Logger(config);
@@ -51,7 +121,7 @@ async function init() {
     } else {
         isS2TLoaded = true;
         isLlmLoaded = true;
-        setStatus("ready");
+        await setState(RecorderState.READY);
     }
 }
 
@@ -79,33 +149,31 @@ const workerStatusHandlers = {
     initiate: (data) => {
     },
     loading: (data) => {
-        setStatus("loading");
         if (!isLoadingLlmorS2T) {
             isLoadingLlmorS2T = true;
-            sendMessage('recording-status', {
-                text: "Loading...", color: "#6c757d", status: "loading"
-            });
+            setState(RecorderState.LOADING);
         }
     },
     progress: (data, type) => {
         if (!isLoadingLlmorS2T) {
             isLoadingLlmorS2T = true;
-            sendMessage('recording-status', {
-                text: "Loading...", color: "#6c757d", status: "loading"
-            });
+            setState(RecorderState.LOADING);
         }
+
+        console.log(data);
     },
-    done: (data, type) => {},
+    done: (data, type) => {
+    },
     "ready:llm": (data) => {
         isLlmLoaded = true;
         if (isLlmLoaded && isS2TLoaded) {
-            setStatus("ready");
+            setState(RecorderState.READY);
         }
     },
     "ready:s2t": (data) => {
         isS2TLoaded = true;
         if (isLlmLoaded && isS2TLoaded) {
-            setStatus("ready");
+            setState(RecorderState.READY);
         }
     },
     "start:llm": (data) => {
@@ -135,21 +203,18 @@ function handleWorkerMessage(event) {
     handler?.(data, type);
 }
 
-function setStatus(status) {
-    if (status === "loading") {
-        sendMessage('status', {
-            ready: false
-        });
-    } else if (status === "ready") {
-        isReady = true;
-        sendMessage('status', {
-            ready: true
-        });
-    }
-}
-
 async function startRecording() {
     if (mediaRecorder?.state === 'recording') {
+        await setState(RecorderState.ERROR, {
+            message: "Called startRecording while recording is in progress."
+        });
+        throw new Error('Called startRecording while recording is in progress.');
+    }
+
+    if (isRecording) {
+        await setState(RecorderState.ERROR, {
+            message: "Called startRecording while recording is in progress."
+        });
         throw new Error('Called startRecording while recording is in progress.');
     }
 
@@ -158,6 +223,7 @@ async function startRecording() {
 
     apiCounter = 0;
     audioChunks = [];
+    speechToText = '';
 
     let micStream;
 
@@ -178,9 +244,8 @@ async function startRecording() {
     try {
         micStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
     } catch (error) {
-        console.error('Error capturing microphone audio:', error);
-        sendMessage('recording-status', {
-            text: "Error: Unable to start recording.", color: "#dc3545", status: "error"
+        await setState(RecorderState.ERROR, {
+            message: "Unable to start recording. microphone access denied."
         });
         return;
     }
@@ -208,8 +273,8 @@ async function startRecording() {
                         updateGUI(result.text);
                     });
                 }
-            } else if (!isRecording) {
-                // preProcessData();
+            } else if (!isRecording  && apiCounter === 0) {
+                preProcessData(speechToText);
             }
         }
     };
@@ -244,7 +309,7 @@ async function startRecording() {
 
                 // Start a new mediaRecorder after a short delay
                 silenceTimeout = setTimeout(() => {
-                    if (mediaRecorder.state != "recording" && !isPause) {
+                    if (mediaRecorder.state !== "recording" && !isPause) {
                         mediaRecorder.start();
                         recordingStartTime = Date.now(); // Reset the recording start time
                     }
@@ -256,9 +321,7 @@ async function startRecording() {
 
     mediaRecorder.start();
     isRecording = true;
-    sendMessage('recording-status', {
-        text: "Recording...", color: "#dc3545", status: "recording"
-    });
+    await setState(RecorderState.RECORDING);
 }
 
 async function stopRecording() {
@@ -277,13 +340,14 @@ async function stopRecording() {
     isRecording = false;
     isPause = false;
 
-    sendMessage('recording-status', {
-        text: "Stopped", color: "#28a745", status: "stopped"
-    });
+    await setState(RecorderState.RECORDING_STOPPED);
 }
 
 async function pauseRecording() {
     if (!isRecording) {
+        await setState(RecorderState.ERROR, {
+            message: "Called pauseRecording while not recording."
+        });
         throw new Error('Called pauseRecording while not recording.');
     }
 
@@ -295,22 +359,27 @@ async function pauseRecording() {
     mediaRecorder.pause();
     isPause = true;
 
-    sendMessage('recording-status', {
-        text: "Paused", color: "#ffc107", status: "paused"
-    });
+    await setState(RecorderState.PAUSED);
 }
 
 async function resumeRecording() {
     if (!isPause) {
+        await setState(RecorderState.ERROR, {
+            message: "Called resumeRecording while not paused."
+        });
         throw new Error('Called resumeRecording while not paused.');
     }
 
     mediaRecorder.resume();
     isPause = false;
 
-    sendMessage('recording-status', {
-        text: "Recording...", color: "#dc3545", status: "recording"
-    });
+    if (config.REALTIME) {
+        await setState(RecorderState.REALTIME_TRANSCRIBING, {
+            transcription: speechToText
+        });
+    } else {
+        await setState(RecorderState.RECORDING);
+    }
 }
 
 async function transcribeAudio() {
@@ -335,9 +404,7 @@ async function transcribeAudio() {
             });
 
             if (!config.REALTIME) {
-                sendMessage('recording-status', {
-                    text: "Transcribing...", color: "#4c28a7", status: "transcribing"
-                });
+                await setState(RecorderState.TRANSCRIBING);
             }
         };
         fileReader.readAsArrayBuffer(blob);
@@ -372,6 +439,9 @@ async function convertAudioToText(audioBlob) {
         return await response.json();
     } catch (error) {
         logger.error("Audio to text conversion error:", error);
+        await setState(RecorderState.ERROR, {
+            message: `Failed to convert audio to text: ${error.message}`
+        })
         throw new Error(`Failed to convert audio to text: ${error.message}`, {
             cause: error,
         });
@@ -382,16 +452,10 @@ async function convertAudioToText(audioBlob) {
 
 function showLoader() {
     apiCounter++;
-    // document.getElementById("s2t-loader").style.display = "block";
 }
 
 function hideLoader() {
     apiCounter--;
-
-    // Hide loader
-    // if (apiCounter == 0) {
-    //     document.getElementById("s2t-loader").style.display = "none";
-    // }
 }
 
 async function updateGUI(text) {
@@ -399,18 +463,18 @@ async function updateGUI(text) {
     speechToText += text;
     speechToText = speechToText.trim();
 
-    let textMessage = "Transcribed!";
-
-    if (speechToText === "") {
-        textMessage = "Error: No audio detected.";
+    if (config.REALTIME && isRecording) {
+        await setState(RecorderState.REALTIME_TRANSCRIBING, {
+            transcription: speechToText
+        });
+    } else {
+        await setState(RecorderState.TRANSCRIPTION_COMPLETE, {
+            transcription: speechToText
+        });
     }
 
-    await sendMessage('recording-status', {
-        text: textMessage, color: "#4c28a7", status: "transcribing-complete", transcription: speechToText, realtime: (config.REALTIME && isRecording)
-    });
-
     // Hide loader
-    if (apiCounter === 0 && !isRecording && speechToText !== "") {
+    if (apiCounter === 0 && !isRecording) {
         await preProcessData(text);
     }
 }
@@ -442,6 +506,10 @@ async function llmApiCall(prompt) {
         const result = await response.json();
         return result.choices[0].message.content;
     } catch (error) {
+        logger.error("LLM API error:", error);
+        await setState(RecorderState.ERROR, {
+            message: `Failed to generate notes: ${error.message}`
+        });
         throw error;
     }
 }
@@ -450,8 +518,8 @@ async function preProcessData(text) {
     logger.log("Pre processing notes");
 
     if (text.trim() === "") {
-        await sendMessage('recording-status', {
-            text: "Error: Please record some audio first.", color: "#dc3545", status: "error"
+        await setState(RecorderState.ERROR, {
+            message: "Please record some audio first."
         });
         logger.debug("Please record some audio first.");
         return;
@@ -463,9 +531,7 @@ async function preProcessData(text) {
     if (config.PRE_PROCESSING) {
         const preProcessingPrompt = `${config.PRE_PROCESSING_PROMPT} ${sanitizedText}`;
 
-        await sendMessage('recording-status', {
-            text: "Pre Processing data...", color: "#4c28a7", status: "pre-processing"
-        })
+        await setState(RecorderState.PRE_PROCESSING_PROMPT);
 
         if (config.LLM_LOCAL) {
             worker.postMessage({
@@ -484,9 +550,9 @@ async function preProcessData(text) {
         try {
             listOfFacts = await llmApiCall(preProcessingPrompt);
         } catch (error) {
-            await sendMessage('recording-status', {
-                text: "Error: Unable to pre-process data.", color: "#dc3545", status: "error"
-            });
+            await setState(RecorderState.ERROR, {
+                message: "Unable to pre-process data."
+            })
             return;
         }
     }
@@ -506,9 +572,7 @@ async function generateNotes(text, facts) {
 
     const prompt = `${config.LLM_CONTEXT_BEFORE} ${promptText} ${config.LLM_CONTEXT_AFTER}`;
 
-    await sendMessage('recording-status', {
-        text: "Generating notes...", color: "#4c28a7", status: "processing"
-    })
+    await setState(RecorderState.GENERATING_NOTES);
 
     if (config.LLM_LOCAL) {
         worker.postMessage({
@@ -530,8 +594,8 @@ async function generateNotes(text, facts) {
 
         await postProcessData(notes, facts);
     } catch (error) {
-        await sendMessage('recording-status', {
-            text: "Error: Unable to generate notes.", color: "#dc3545", status: "error"
+        await setState(RecorderState.ERROR, {
+            message: "Unable to generate notes."
         });
     }
 }
@@ -550,9 +614,7 @@ async function postProcessData(text, facts) {
 
         const postProcessingPrompt = `${config.POST_PROCESSING_PROMPT} ${promptText}`;
 
-        await sendMessage('recording-status', {
-            text: "Post Processing data...", color: "#4c28a7", status: "post-processing"
-        })
+        await setState(RecorderState.POST_PROCESSING_PROMPT);
 
         if (config.LLM_LOCAL) {
             worker.postMessage({
@@ -572,8 +634,8 @@ async function postProcessData(text, facts) {
         try {
             notes = await llmApiCall(postProcessingPrompt);
         } catch (error) {
-            await sendMessage('recording-status', {
-                text: "Error: Unable to post-process data.", color: "#dc3545", status: "error"
+            await setState(RecorderState.ERROR, {
+                message: "Unable to post-process data."
             });
         }
     }
@@ -583,9 +645,8 @@ async function postProcessData(text, facts) {
 
 async function showGeneratedNotes(notes) {
     console.log(notes);
-
-    await sendMessage('recording-status', {
-        text: "Notes generated!", color: "#28a745", status: "note-generated", notes: notes
+    await setState(RecorderState.COMPLETE, {
+        notes: notes
     });
 }
 
@@ -635,11 +696,6 @@ chrome.runtime.onMessage.addListener(async (message) => {
             case 'resume-recording':
                 resumeRecording();
                 break;
-            case 'check-status':
-                sendMessage('status', {
-                    ready: isReady
-                });
-                break;
             case 'generate-notes':
                 preProcessData(message.data);
                 break;
@@ -648,6 +704,9 @@ chrome.runtime.onMessage.addListener(async (message) => {
                 break;
             case 'set-audio-device':
                 audioDeviceId = message.data;
+                break;
+            case 'init':
+                await init();
                 break;
             default:
                 throw new Error('Unrecognized message:', message.type);
@@ -660,5 +719,3 @@ async function sendMessage(type, data, target = 'content') {
         target: target, type: type, data: data
     });
 }
-
-init();

@@ -1,3 +1,7 @@
+// Description: Helper functions used in the application
+// The helper functions are used to perform common tasks such as validating input, sanitizing data, and formatting data.
+
+// Function: isValidUrl - Check if a given URL is valid
 export function isValidUrl(url) {
   try {
     new URL(url);
@@ -7,7 +11,7 @@ export function isValidUrl(url) {
   }
 }
 
-// Sanitize input to prevent XSS attacks
+// Function: sanitizeInput - Sanitize input data to prevent XSS attacks
 export function sanitizeInput(input) {
   return input.replace(/[<>&'"]/g, (char) => {
     const entities = {
@@ -21,6 +25,7 @@ export function sanitizeInput(input) {
   });
 }
 
+// Function: generateBaseUrl - Generate a base URL from the given parameters
 export function generateBaseUrl(is_secure, host, port) {
   let prefix = "http";
 
@@ -35,6 +40,7 @@ export function generateBaseUrl(is_secure, host, port) {
   return `${prefix}://${host}:${port}`;
 }
 
+// Function: formatBytes - Format the given size in bytes to a human-readable format
 export function formatBytes(size) {
   const i = size == 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
   return (
