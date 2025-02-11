@@ -3,6 +3,7 @@ import {isValidUrl} from "../src/helpers.js";
 
 // variables for the configuration settings
 let config;
+const customModelKey = "custom";
 
 // Function: getOptionsFromArray - Get the html options from an array of models
 // Map the array of models to an array of option elements and join them
@@ -59,21 +60,32 @@ function loadRemoteModelsOnSettingsChange() {
 function showConfig() {
     // Transcription settings
     document.getElementById("transcriptionLocal").checked = config.TRANSCRIPTION_LOCAL;
-    toggleTranscriptionSettings();
 
     const transcriptionLocalModelSelect = document.getElementById("transcriptionLocalModel");
-    transcriptionLocalModelSelect.innerHTML = getOptionsFromArray(config.TRANSCRIPTION_LOCAL_MODELS);
-    transcriptionLocalModelSelect.value = config.TRANSCRIPTION_LOCAL_MODEL;
+    transcriptionLocalModelSelect.innerHTML = getOptionsFromArray([...config.TRANSCRIPTION_LOCAL_MODELS, customModelKey]);
+
+    if (config.TRANSCRIPTION_LOCAL_MODELS.includes(config.TRANSCRIPTION_LOCAL_MODEL)) {
+        transcriptionLocalModelSelect.value = config.TRANSCRIPTION_LOCAL_MODEL;
+    } else {
+        transcriptionLocalModelSelect.value = customModelKey;
+    }
 
     document.getElementById("transcriptionUrl").value = config.TRANSCRIPTION_URL;
     document.getElementById("transcriptionApiKey").value = config.TRANSCRIPTION_API_KEY;
+
+    toggleTranscriptionSettings();
 
     // LLM settings
     document.getElementById("llmLocal").checked = config.LLM_LOCAL;
 
     const llmLocalModelSelect = document.getElementById("llmLocalModel");
-    llmLocalModelSelect.innerHTML = getOptionsFromArray(config.LLM_LOCAL_MODELS);
-    llmLocalModelSelect.value = config.LLM_LOCAL_MODEL;
+    llmLocalModelSelect.innerHTML = getOptionsFromArray([...config.LLM_LOCAL_MODELS, customModelKey]);
+
+    if (config.LLM_LOCAL_MODELS.includes(config.LLM_LOCAL_MODEL)) {
+        llmLocalModelSelect.value = config.LLM_LOCAL_MODEL;
+    } else {
+        llmLocalModelSelect.value = customModelKey;
+    }
 
     document.getElementById("llmUrl").value = config.LLM_URL;
     document.getElementById("llmApiKey").value = config.LLM_API_KEY;
@@ -138,6 +150,17 @@ function toggleTranscriptionSettings() {
         showHideSettings(".transcriptionServerSettings", "hidden", "visible");
         formValidations('.transcription-local-form', true);
         formValidations('.transcription-server-form', false);
+
+        let transcriptionLocalModelSelect = document.getElementById("transcriptionLocalModel");
+
+        if (transcriptionLocalModelSelect.value === customModelKey) {
+            document.getElementById('transcriptionLocalModelCustom').value = config.TRANSCRIPTION_LOCAL_MODEL;
+            showHideSettings(".transcriptionLocalCustomSettings", "visible", "hidden");
+            formValidations('#transcriptionLocalModelCustom', true);
+        } else {
+            showHideSettings(".transcriptionLocalCustomSettings", "hidden", "visible");
+            formValidations('#transcriptionLocalModelCustom', false);
+        }
     } else {
         showHideSettings(".transcriptionLocalSettings", "hidden", "visible");
         showHideSettings(".transcriptionServerSettings", "visible", "hidden");
@@ -157,6 +180,17 @@ function toggleLLMSettings() {
         showHideSettings(".llmServerSettings", "hidden", "visible");
         formValidations('.llm-local-form', true);
         formValidations('.llm-server-form', false);
+
+        let llmLocalModelSelect = document.getElementById("llmLocalModel");
+
+        if (llmLocalModelSelect.value === customModelKey) {
+            document.getElementById('llmLocalModelCustom').value = config.LLM_LOCAL_MODEL;
+            showHideSettings(".llmLocalCustomSettings", "visible", "hidden");
+            formValidations('#llmLocalModelCustom', true);
+        } else {
+            showHideSettings(".llmLocalCustomSettings", "hidden", "visible");
+            formValidations('#llmLocalModelCustom', false);
+        }
     } else {
         showHideSettings(".llmLocalSettings", "hidden", "visible");
         showHideSettings(".llmServerSettings", "visible", "hidden");
@@ -202,12 +236,22 @@ function updateConfig() {
     // Transcription settings
     config.TRANSCRIPTION_LOCAL = document.getElementById("transcriptionLocal").checked;
     config.TRANSCRIPTION_LOCAL_MODEL = document.getElementById("transcriptionLocalModel").value;
+
+    if (config.TRANSCRIPTION_LOCAL_MODEL === customModelKey) {
+        config.TRANSCRIPTION_LOCAL_MODEL = document.getElementById("transcriptionLocalModelCustom").value;
+    }
+
     config.TRANSCRIPTION_URL = document.getElementById("transcriptionUrl").value;
     config.TRANSCRIPTION_API_KEY = document.getElementById("transcriptionApiKey").value;
 
     // LLM settings
     config.LLM_LOCAL = document.getElementById("llmLocal").checked;
     config.LLM_LOCAL_MODEL = document.getElementById("llmLocalModel").value;
+
+    if (config.LLM_LOCAL_MODEL === customModelKey) {
+        config.LLM_LOCAL_MODEL = document.getElementById("llmLocalModelCustom").value;
+    }
+
     config.LLM_URL = document.getElementById("llmUrl").value.replace(/\/$/, "");
     config.LLM_API_KEY = document.getElementById("llmApiKey").value;
 
@@ -356,7 +400,9 @@ document.addEventListener("DOMContentLoaded", async function (event) {
 
     // Event listeners for the checkboxes
     document.getElementById("transcriptionLocal").addEventListener("change", toggleTranscriptionSettings);
+    document.getElementById("transcriptionLocalModel").addEventListener("change", toggleTranscriptionSettings);
     document.getElementById("llmLocal").addEventListener("change", toggleLLMSettings);
+    document.getElementById("llmLocalModel").addEventListener("change", toggleLLMSettings);
     document.getElementById("preProcessing").addEventListener("change", togglePreProcessingSettings);
     document.getElementById("postProcessing").addEventListener("change", togglePostProcessingSettings);
 
