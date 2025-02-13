@@ -189,7 +189,6 @@ async function init() {
         notesElement.textContent = notes;
         notesElement.style.display = "block";
         copyNotesButton.style.display = "block";
-        saveNotesHistory(notes);
     }
 
     const recordingStateHandler = {

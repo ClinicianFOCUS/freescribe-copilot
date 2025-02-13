@@ -86,6 +86,10 @@ async function closeExtension() {
     // if offscreen document is open close the doucment
     if (offscreenDocument) {
         await chrome.offscreen.closeDocument();
+        await loadExtension();
+        chrome.runtime.sendMessage({
+            target: 'offscreen', type: 'init'
+        });
     }
 }
 
