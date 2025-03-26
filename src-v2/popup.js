@@ -193,6 +193,16 @@ async function init() {
         copyNotesButton.style.display = "block";
     }
 
+    let showErrorMessage = (message) => {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+    }
+
+    let hideErrorMessage = () => {
+        errorMessage.textContent = "";
+        errorMessage.style.display = "none";
+    }
+
     const recordingStateHandler = {
         "initializing": (data) => {
             recordButton.disabled = true;
@@ -278,16 +288,6 @@ async function init() {
             audioInputSelect.disabled = false;
             showErrorMessage(data.message)
         }
-    }
-
-    let showErrorMessage = (message) => {
-        errorMessage.textContent = message;
-        errorMessage.style.display = "block";
-    }
-
-    let hideErrorMessage = () => {
-        errorMessage.textContent = "";
-        errorMessage.style.display = "none";
     }
 
     const messageHandler = {
