@@ -38,7 +38,7 @@ const RecorderState = {
     ERROR: 'error',
 };
 
-let defaultData = {
+const defaultData = {
     transcription: '',
     notes: '',
     message: '',
@@ -214,6 +214,10 @@ async function startRecording() {
             message: "Called startRecording while recording is in progress."
         });
         throw new Error('Called startRecording while recording is in progress.');
+    }
+
+    if (state.state === RecorderState.ERROR) {
+        await setState(RecorderState.READY, defaultData);
     }
 
     if (state.state !== RecorderState.READY && state.state !== RecorderState.COMPLETE) {
@@ -515,7 +519,7 @@ async function llmApiCall(prompt) {
     }
 }
 
-async function preProcessData(text) {
+async function preProcessData(text, autoNoteGeneration = true) {
     logger.log("Pre processing notes");
 
     if (text.trim() === "") {
@@ -524,6 +528,16 @@ async function preProcessData(text) {
         });
         logger.debug("Please record some audio first.");
         return;
+    }
+
+    if (autoNoteGeneration && config.MINIMUM_WORD_COUNT_CHECK) {
+        const wordCount = text.split(" ").length;
+        if (wordCount < config.MINIMUM_WORD_COUNT_LIMIT) {
+            await setState(RecorderState.ERROR, {
+                message: `Minimum word count limit not met. Word count: ${wordCount}. Please click on the Generate Notes button to proceed.`
+            });
+            return
+        }
     }
 
     let sanitizedText = sanitizeInput(text);
@@ -698,7 +712,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
                 resumeRecording();
                 break;
             case 'generate-notes':
-                preProcessData(message.data);
+                preProcessData(message.data, false);
                 break;
             case 'get-audio-devices':
                 getAudioDeviceList();

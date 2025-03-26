@@ -420,6 +420,32 @@
             ></textarea>
           </div>
 
+            <!-- Add this section under the existing options in the form -->
+            <h3 class="mt-4">Word Count Settings</h3>
+            <div class="config-item form-check">
+                <input type="checkbox"
+                       id="minimumWordCountCheck"
+                       name="minimumWordCountCheck"
+                       class="form-check-input"/>
+                <label for="minimumWordCountCheck" class="form-check-label">
+                    Enable Minimum Word Count Check
+                </label>
+                &nbsp;
+                <i class="fas fa-question-circle"
+                   data-toggle="tooltip"
+                   data-placement="right"
+                   title="Enable this option to check for a minimum word count."></i>
+            </div>
+            <div class="config-item">
+                <label for="minimumWordCountLimit">Minimum Word Count Limit:</label>
+                <input type="number"
+                       id="minimumWordCountLimit"
+                       name="minimumWordCountLimit"
+                       class="form-control"
+                       min="1"
+                       required/>
+            </div>
+
           <div class="mt-4 d-flex justify-content-end">
             <button type="submit" id="saveConfig" class="btn btn-primary me-3">
               Save

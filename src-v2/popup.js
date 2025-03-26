@@ -19,6 +19,7 @@ async function init() {
     let openPage = document.getElementsByClassName("openPage");
     let audioInputSelect = document.getElementById("audioInputSelect");
     let volumeLevel = document.getElementById("volumeLevel");
+    let errorMessage = document.getElementById("errorMessage");
 
     // Start recording
     recordButton.addEventListener("click", async () => {
@@ -183,6 +184,7 @@ async function init() {
         userInput.style.display = "block";
         generateNotesButton.style.display = "block";
         userInput.value = transcription;
+        userInput.scrollTop = userInput.scrollHeight;
     }
 
     const showNotes = (notes) => {
@@ -235,15 +237,11 @@ async function init() {
             showTranscription(data.transcription);
             hideLoader();
             generateNotesButton.disabled = false;
-            userInput.value += data.transcription;
-            userInput.scrollTop = userInput.scrollHeight;
         },
         "realtime-transcribing": (data) => {
             showLoader();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
-            userInput.value += data.transcription;
-            userInput.scrollTop = userInput.scrollHeight;
         },
         "pre-processing-prompt": (data) => {
             hideLoader();
@@ -278,13 +276,25 @@ async function init() {
             isRecording = false;
             recordButton.disabled = false;
             audioInputSelect.disabled = false;
+            showErrorMessage(data.message)
         }
+    }
+
+    let showErrorMessage = (message) => {
+        errorMessage.textContent = message;
+        errorMessage.style.display = "block";
+    }
+
+    let hideErrorMessage = () => {
+        errorMessage.textContent = "";
+        errorMessage.style.display = "none";
     }
 
     const messageHandler = {
         "recorder-state": (message) => {
             const {state, data} = message;
             console.log("Recorder state: ", state, data);
+            hideErrorMessage();
             let handler = recordingStateHandler[state];
             handler?.(data);
         },
