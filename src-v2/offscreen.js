@@ -531,7 +531,7 @@ async function preProcessData(text, autoNoteGeneration = true) {
     }
 
     if (autoNoteGeneration && config.MINIMUM_WORD_COUNT_CHECK) {
-        const wordCount = text.split(" ").length;
+        const wordCount = text.trim().split(/\s+/).length;
         if (wordCount < config.MINIMUM_WORD_COUNT_LIMIT) {
             await setState(RecorderState.ERROR, {
                 message: `Minimum word count limit not met. Word count: ${wordCount}. Please click on the Generate Notes button to proceed.`
