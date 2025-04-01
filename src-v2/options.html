@@ -446,6 +446,26 @@
                        required/>
             </div>
 
+          <h3 class="mt-4">Translation Settings</h3>
+          <div class="config-item form-check">
+            <input
+              type="checkbox"
+              id="translateToEnglish"
+              name="translateToEnglish"
+              class="form-check-input"
+            />
+            <label for="translateToEnglish" class="form-check-label">
+              Translate to English (Only Local S2T)
+            </label>
+            &nbsp;
+            <i
+              class="fas fa-question-circle"
+              data-toggle="tooltip"
+              data-placement="right"
+              title="Enable this option to translate the transcription to English."
+            ></i>
+          </div>
+
           <div class="mt-4 d-flex justify-content-end">
             <button type="submit" id="saveConfig" class="btn btn-primary me-3">
               Save

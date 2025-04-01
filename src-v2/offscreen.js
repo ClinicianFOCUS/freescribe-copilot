@@ -406,7 +406,10 @@ async function transcribeAudio() {
             // Send the audio data to the transcriber
             worker.postMessage({
                 type: "transcribe",
-                data: audio,
+                data: {
+                    audio: audio,
+                    translate: config.TRANSLATE_TO_ENGLISH,
+                },
             });
 
             if (!config.REALTIME) {
