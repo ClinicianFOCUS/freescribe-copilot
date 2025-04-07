@@ -121,6 +121,11 @@ function showConfig() {
     document.getElementById("postProcessingPrompt").value = config.POST_PROCESSING_PROMPT;
     // toggle the post-processing settings based on the checkbox
     togglePostProcessingSettings();
+
+    document.getElementById("minimumWordCountCheck").checked = config.MINIMUM_WORD_COUNT_CHECK;
+    document.getElementById("minimumWordCountLimit").value = config.MINIMUM_WORD_COUNT_LIMIT;
+
+    toggleMinimumWordCountLimit();
 }
 
 
@@ -230,6 +235,12 @@ function togglePostProcessingSettings() {
     }
 }
 
+function toggleMinimumWordCountLimit() {
+    const isChecked = document.getElementById("minimumWordCountCheck").checked;
+    const limitInput = document.getElementById("minimumWordCountLimit").parentElement;
+    limitInput.style.display = isChecked ? "block" : "none";
+}
+
 // Function: updateConfig - Update the configuration settings based on the form inputs
 // Save the configuration settings and close the tab
 function updateConfig() {
@@ -271,6 +282,9 @@ function updateConfig() {
     // Post-processing settings
     config.POST_PROCESSING = document.getElementById("postProcessing").checked;
     config.POST_PROCESSING_PROMPT = document.getElementById("postProcessingPrompt").value;
+
+    config.MINIMUM_WORD_COUNT_CHECK = document.getElementById("minimumWordCountCheck").checked;
+    config.MINIMUM_WORD_COUNT_LIMIT = parseInt(document.getElementById("minimumWordCountLimit").value, 10);
 
     // Save configuration
     saveConfig(config).then(function () {
@@ -405,6 +419,7 @@ document.addEventListener("DOMContentLoaded", async function (event) {
     document.getElementById("llmLocalModel").addEventListener("change", toggleLLMSettings);
     document.getElementById("preProcessing").addEventListener("change", togglePreProcessingSettings);
     document.getElementById("postProcessing").addEventListener("change", togglePostProcessingSettings);
+    document.getElementById("minimumWordCountCheck").addEventListener("change", toggleMinimumWordCountLimit);
 
     // listen to when the LLM server settings change and update the models
     document.getElementById("llmUrl").addEventListener("focusout", loadRemoteModelsOnSettingsChange);
