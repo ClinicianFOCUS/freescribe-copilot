@@ -35,6 +35,7 @@ export const defaultConfig = {
     POST_PROCESSING_PROMPT: "Please check your work from the list of facts and ensure the SOAP note is accurate based on the information. Please ensure the data is accurate in regards to the list of facts.",
     MINIMUM_WORD_COUNT_CHECK: true,
     MINIMUM_WORD_COUNT_LIMIT: 50,
+    TRANSLATE_TO_ENGLISH: false,
 };
 
 // Function: loadConfig - Load the configuration from the Chrome storage API

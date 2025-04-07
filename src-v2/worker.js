@@ -19,7 +19,7 @@ const llm = "llm";
 // Ensures only one model is created of each type
 // provides progress callback to track model loading
 // and dispose of the model when it is no longer neededS
-class TranslationPipeline {
+class TranscriptionPipeline {
     static task = "automatic-speech-recognition";
     static model = "onnx-community/whisper-base";
     static instance = null;
@@ -47,7 +47,7 @@ async function loadSpeech2Text(model) {
         type: text2speech, status: "loading", message: "Loading model...",
     });
 
-    const p = TranslationPipeline;
+    const p = TranscriptionPipeline;
     if (p.model !== model) {
         // Invalidate model if different
         p.model = model;
@@ -74,10 +74,13 @@ async function loadSpeech2Text(model) {
 // Send a message to the main thread when the transcription is complete.
 // Prevent multiple transcriptions from running at once.
 // Chunk the audio and process it in chunks to improve performance.
-async function transcribe(audio) {
+async function transcribe(data) {
     if (isTranscribing) {
         return;
     }
+
+    const {audio, translate} = data;
+
     isTranscribing = true;
 
     // Tell the main thread we are starting
@@ -86,7 +89,7 @@ async function transcribe(audio) {
     });
 
     // Load transcriber model
-    const transcriber = await TranslationPipeline.getInstance((data) => {
+    const transcriber = await TranscriptionPipeline.getInstance((data) => {
         data.type = text2speech;
         self.postMessage(data);
     });
@@ -106,8 +109,7 @@ async function transcribe(audio) {
     let num_tokens = 0;
     let tps;
 
-    // Create a streamer to process the text in chunks
-    const streamer = new WhisperTextStreamer(transcriber.tokenizer, {
+    let transcriberOptions = {
         time_precision, on_chunk_start: (x) => {
             const offset = (chunk_length_s - stride_length_s) * chunk_count;
             chunks.push({
@@ -133,7 +135,16 @@ async function transcribe(audio) {
             num_tokens = 0;
             ++chunk_count;
         },
-    });
+    }
+
+    if (translate) {
+        // Set the language model to use for transcription
+        transcriberOptions.language = "en";
+        transcriberOptions.task = "translate";
+    }
+
+    // Create a streamer to process the text in chunks
+    const streamer = new WhisperTextStreamer(transcriber.tokenizer, transcriberOptions);
 
     // Actually run transcription
     const output = await transcriber(audio, {

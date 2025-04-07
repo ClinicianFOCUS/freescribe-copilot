@@ -124,6 +124,7 @@ function showConfig() {
 
     document.getElementById("minimumWordCountCheck").checked = config.MINIMUM_WORD_COUNT_CHECK;
     document.getElementById("minimumWordCountLimit").value = config.MINIMUM_WORD_COUNT_LIMIT;
+    document.getElementById("translateToEnglish").checked = config.TRANSLATE_TO_ENGLISH;
 
     toggleMinimumWordCountLimit();
 }
@@ -285,6 +286,7 @@ function updateConfig() {
 
     config.MINIMUM_WORD_COUNT_CHECK = document.getElementById("minimumWordCountCheck").checked;
     config.MINIMUM_WORD_COUNT_LIMIT = parseInt(document.getElementById("minimumWordCountLimit").value, 10);
+    config.TRANSLATE_TO_ENGLISH = document.getElementById("translateToEnglish").checked;
 
     // Save configuration
     saveConfig(config).then(function () {
