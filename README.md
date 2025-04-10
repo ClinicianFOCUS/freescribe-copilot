@@ -4,21 +4,37 @@ FreeScribe Copilot is a Chrome and Firefox extension designed to assist healthca
 
 ## Features
 
-- **Real-time Audio Transcription**: Capture and transcribe audio from your microphone and active browser tab.
-- **Automatic Note Generation**: Generate concise SOAP notes using an AI model trained for medical documentation.
-- **Customizable Transcription and AI Settings**: Configure transcription server, API keys, and language model preferences.
-- **Device Support**: Choose from multiple audio input devices for flexible recording.
-- **Real-time Processing**: Option to enable or disable real-time audio processing and note generation based on silence detection.
+- **Local Transcription**  
+  *Use a local transcription service by toggling the 'Use Local Transcription' option.*
+
+- **Local Language Model (LLM)**  
+  *Run an LLM container locally by enabling 'Use Local LLM' for more secure and private processing.*
+
+- **Real-time Processing**  
+  *Capture audio in real-time and process it instantly with configurable recording length and silence detection.*
+
+- **Word Count Settings**  
+  *Enforce a minimum word count whenever needed by enabling the 'Minimum Word Count Check' and setting a limit.*
+
+- **Pre- and Post-Processing**  
+  *Customize prompts for both pre and post processing to fine-tune the final output.*
+
+- **Translation into English**  
+  *Automatically translate local transcription output into English for consistent documentation.*
+
+- **Configuration**  
+  *Adjust settings like debug mode, server URLs, API keys, and more from the dedicated options page.*
+
 
 ## Prerequisites
 
-This project requires the following components to be running before using the extension:
+If you plan to use remote transcription or a remote LLM, the following components are required:
 
 - **Freescribe Client**: [FreeScribe](https://github.com/ClinicianFOCUS/FreeScribe)
 - **Local LLM Container**: [Local LLM Container](https://github.com/ClinicianFOCUS/local-llm-container)
 - **Speech to Text Converter**: [Speech2Text Container](https://github.com/ClinicianFOCUS/speech2text-container)
 
-Ensure these components are installed and started by following the instructions in their respective repositories.
+If you use local features for these tasks, you can skip the above prerequisites.
 
 ## Build
 
@@ -73,9 +89,13 @@ npm run prod
 
 FreeScribe Copilot is customizable via the options page:
 
-- **Transcription Settings**: Set the transcription server URL and API key.
-- **Language Model Settings**: Define the AI model and prompts for generating SOAP notes.
-- **Real-time Processing**: Configure silence detection thresholds and recording lengths for real-time processing.
+- **Transcription Settings**: Configure local or remote transcription, specify server URLs, and set API keys.
+- **Language Model Settings**: Choose between local or remote LLMs, define models, and customize prompts for generating SOAP notes.
+- **Real-time Processing**: Enable real-time recording, set silence thresholds, and adjust recording lengths.
+- **Word Count Settings**: Enforce a minimum word count when needed.
+- **Pre- and Post-Processing**: Apply custom prompts before and after generating the final output.
+- **Translation**: Automatically translate local transcription output into English.
+- **Logging**: Enable debug mode to capture detailed logs.
 
 To access the options page:
 
