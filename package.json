@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "@huggingface/transformers": "^3.0.2",
-    "bootstrap": "^5.3.3",
+    "bootstrap": "^5.3.6",
     "toastr": "^2.1.4",
     "ts-loader": "^9.5.1"
   },
