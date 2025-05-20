@@ -1,7 +1,7 @@
 @use "sass:math";
 @use "sass:color";
-@use "bootstrap/scss/bootstrap" as *;
-@use "toastr/build/toastr" as *;
+@use "~bootstrap/scss/bootstrap" as *;
+@use "~toastr" as *;
 
 // Custom variables
 $primary-color: #007bff;
@@ -84,7 +84,7 @@ button {
 
   &:hover {
     text-decoration: underline;
-    color: darken($secondary-color, 15%);
+    color: adjust-color($secondary-color, $lightness: -15%);
   }
 }
 
