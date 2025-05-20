@@ -84,7 +84,7 @@ button {
 
   &:hover {
     text-decoration: underline;
-    color: adjust($secondary-color, $lightness: -15%);
+    color: color.scale($secondary-color, $lightness: -15%);
   }
 }
 
