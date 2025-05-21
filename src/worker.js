@@ -159,13 +159,13 @@ async function transcribe(audio) {
 
 class LlmPipeline {
     static task = "text-generation";
-    static model = "onnx-community/granite-3.0-2b-instruct-q4f16";
+    static model = "onnx-community/granite-3.0-2b-instruct";
     static instance = null;
 
     static async getInstance(progress_callback = null) {
         if (this.instance === null) {
             this.instance = pipeline(this.task, this.model, {
-                dtype: "q4f16", device: "webgpu", progress_callback,
+                dtype: "int8", device: "webgpu", progress_callback,
             });
         }
 
