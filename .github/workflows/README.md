@@ -80,7 +80,19 @@ FreeScribe Copilot is customizable via the options page:
 To access the options page:
 
 1. Click the FreeScribe icon in the browser toolbar.
-2. Choose "Options" to configure your settings.
+2. Click on "Configuration" to configure your settings.
+
+### Setting up server-based Transcription
+
+1. Apply ths URL to the Transcription Server URL: https://localhost:2224/whisperaudio
+2. Get the Transcription Server API Key from the docker container logs: `speech-container`. 
+   ** make sure to get the latest API key
+
+### Setting uup server-based LLM
+
+1. Apply this URL to the LLM Server URL: https://localhost:3334/v1
+2. Get the LLM Server API Key from the docker container logs: `authentication-ollama`
+   ** make sure to get the latest API key
 
 ## License
 
