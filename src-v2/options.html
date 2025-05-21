@@ -160,6 +160,19 @@
                 <!-- Options will be populated dynamically -->
               </select>
             </div>
+            <div class="llmLocalSettings config-item">
+              <label for="llmDtype">Model Precision:</label>
+              <select id="llmDtype" name="llmDtype" class="form-control llm-local-form">
+                <option value="fp32">Full precision (fp32)</option>
+                <option value="fp16">Half precision (fp16)</option>
+                <option value="int8">8-bit integer (int8)</option>
+                <option value="uint8">8-bit unsigned (uint8)</option>
+                <option value="q8">8-bit quantized (q8)</option>
+                <option value="q4">4-bit quantized (q4)</option>
+                <option value="bnb4">4-bit BNB (bnb4)</option>
+                <option value="q4f16">4-bit mixed (q4f16)</option>
+              </select>
+            </div>
           </div>
 
           <div class="llmLocalCustomSettings config-item hidden">

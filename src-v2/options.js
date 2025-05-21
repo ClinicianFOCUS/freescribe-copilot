@@ -259,6 +259,7 @@ function updateConfig() {
     // LLM settings
     config.LLM_LOCAL = document.getElementById("llmLocal").checked;
     config.LLM_LOCAL_MODEL = document.getElementById("llmLocalModel").value;
+    config.LLM_DTYPE = document.getElementById("llmDtype").value;
 
     if (config.LLM_LOCAL_MODEL === customModelKey) {
         config.LLM_LOCAL_MODEL = document.getElementById("llmLocalModelCustom").value;
@@ -320,6 +321,7 @@ document.addEventListener("DOMContentLoaded", async function (event) {
 
     // Show the configuration settings on the options page
     showConfig();
+    document.getElementById("llmDtype").value = config.LLM_DTYPE;
 
     // Custom URL validation method for the form
     $.validator.addMethod(
