@@ -14,8 +14,8 @@ export const defaultConfig = {
     TRANSCRIPTION_SECURE: 0,
     TRANSCRIPTION_API_KEY: "", // LLM
     LLM_LOCAL: true,
-    LLM_LOCAL_MODELS: ["onnx-community/granite-3.0-2b-instruct"],
-    LLM_LOCAL_MODEL: "onnx-community/granite-3.0-2b-instruct",
+    LLM_LOCAL_MODELS: ["onnx-community/granite-3.0-2b-instruct"],  // Base model name (no suffix)
+    LLM_LOCAL_MODEL: "onnx-community/granite-3.0-2b-instruct",    // Base model name
     LLM_URL: "http://localhost:1337/v1",
     LLM_HOST: "localhost",
     LLM_PORT: 1337,
