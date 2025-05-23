@@ -1,8 +1,6 @@
 import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
 
-const LOADING_STORAGE_KEY = 'modelsInitialized';
-
 async function init() {
     const loadingOverlay = document.getElementById('loadingOverlay');
     
