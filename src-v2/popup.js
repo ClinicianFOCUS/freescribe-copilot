@@ -8,15 +8,13 @@ async function init() {
     loadingOverlay.style.display = 'flex';
     
     try {
-
+        let config = await loadConfig();
+        let logger = new Logger(config);
     } catch (error) {
         loadingOverlay.style.display = 'none';
         console.error("Initialization error:", error);
         throw error;
     }
-
-    let config = await loadConfig();
-    let logger = new Logger(config);
     let isRecording = false;
 
     let recordButton = document.getElementById("recordButton");
