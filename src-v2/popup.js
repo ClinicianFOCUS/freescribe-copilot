@@ -214,15 +214,15 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "loading": (data) => {
-            document.getElementById('loadingOverlay').style.display = 'flex';
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "ready": (data) => {
-            document.getElementById('loadingOverlay').style.display = 'none';
+            loadingOverlay.style.display = 'none';
             recordButton.disabled = false;
         },
         "recording": (data) => {
