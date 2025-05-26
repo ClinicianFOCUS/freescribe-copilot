@@ -18,6 +18,7 @@ let scriptProcessor;
 let silenceTimeout;
 let apiCounter = 0;
 let speechToText = '';
+let lastProgressLog = null;
 
 let audioDeviceId = null;
 
@@ -100,6 +101,7 @@ async function init() {
         worker.addEventListener("message", handleWorkerMessage);
 
         if (config.TRANSCRIPTION_LOCAL) {
+            logger.log("Loading S2T model", config.TRANSCRIPTION_LOCAL_MODEL);
             worker.postMessage({
                 type: "load_s2t",
                 data: config.TRANSCRIPTION_LOCAL_MODEL,
@@ -109,6 +111,7 @@ async function init() {
         }
 
         if (config.LLM_LOCAL) {
+            logger.log("Loading LLM model", config.LLM_LOCAL_MODEL);
             worker.postMessage({
                 type: "load_llm",
                 data: config.LLM_LOCAL_MODEL,
@@ -158,17 +161,23 @@ const workerStatusHandlers = {
             setState(RecorderState.LOADING);
         }
 
-        console.log(data);
+        const now = Date.now();
+        if (!lastProgressLog || now - lastProgressLog >= 10000) {
+            console.log(data);
+            lastProgressLog = now;
+        }
     },
     done: (data, type) => {
     },
     "ready:llm": (data) => {
+        logger.log("LLM model loaded", data.model);
         isLlmLoaded = true;
         if (isLlmLoaded && isS2TLoaded) {
             setState(RecorderState.READY);
         }
     },
     "ready:s2t": (data) => {
+        logger.log("S2T model loaded", data.model);
         isS2TLoaded = true;
         if (isLlmLoaded && isS2TLoaded) {
             setState(RecorderState.READY);
@@ -180,11 +189,13 @@ const workerStatusHandlers = {
     update: (data) => {
     },
     "complete:llm": (data) => {
+        logger.log("LLM transcription complete", data.data.text);
         let {text, type, extra} = data.data;
 
         llmHandler[type]?.(text, extra);
     },
     "complete:s2t": (data) => {
+        logger.log("S2T transcription complete", data.data.text);
         hideLoader();
         if (config.REALTIME) {
             speechToText = '';

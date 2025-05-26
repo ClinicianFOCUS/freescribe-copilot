@@ -159,13 +159,13 @@ async function transcribe(audio) {
 
 class LlmPipeline {
     static task = "text-generation";
-    static model = "onnx-community/Llama-3.2-1B-Instruct-q4f16";
+    static model = "onnx-community/granite-3.0-2b-instruct";
     static instance = null;
 
     static async getInstance(progress_callback = null) {
         if (this.instance === null) {
             this.instance = pipeline(this.task, this.model, {
-                dtype: "q4f16", device: "webgpu", progress_callback,
+                dtype: "q4", device: "webgpu", progress_callback,
             });
         }
 
@@ -174,30 +174,49 @@ class LlmPipeline {
 }
 
 async function loadLlm(model) {
-    self.postMessage({
-        type: llm, status: "loading", message: "Loading model...",
-    });
-
-    const p = LlmPipeline;
-    if (p.model !== model) {
-        // Invalidate model if different
-        p.model = model;
-
-        if (p.instance !== null) {
-            (await p.getInstance()).dispose();
-            p.instance = null;
+    try {
+        // Tell the main thread we are starting
+        self.postMessage({
+            type: "llm", 
+            status: "loading", 
+            message: "Loading model...",
+        });
+        
+        const p = LlmPipeline;
+        
+        if (p.model !== model) {
+            // Invalidate model if different
+            p.model = model;
+            if (p.instance !== null) {
+                try {
+                    (await p.getInstance()).dispose();
+                } catch (disposeError) {
+                    console.warn("Error disposing previous instance:", disposeError);
+                }
+                p.instance = null;
+            }
         }
+        
+        // Load the pipeline and save it for future use.
+        await p.getInstance((x) => {
+            // We also add a progress callback to the pipeline so that we can
+            // track model loading.
+            x.type = "llm";
+            self.postMessage(x);
+        });
+        
+        // Tell the main thread we are ready
+        self.postMessage({type: "llm", status: "ready"});
+        
+    } catch (error) {
+        console.error("Error loading LLM:", error);
+        self.postMessage({
+            type: "llm", 
+            status: "error", 
+            message: `Failed to load model: ${error.message}`,
+            error: error.toString()
+        });
     }
-
-    // Load the pipeline and save it for future use.
-    await p.getInstance((x) => {
-        // We also add a progress callback to the pipeline so that we can
-        // track model loading.
-        x.type = llm;
-        self.postMessage(x);
-    });
-
-    self.postMessage({type: llm, status: "ready"});
 }
 
 async function generate(data) {

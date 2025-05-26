@@ -184,7 +184,7 @@ async function transcribe(data) {
 // and dispose of the model when it is no longer needed
 class LlmPipeline {
     static task = "text-generation";
-    static model = "onnx-community/Llama-3.2-1B-Instruct-q4f16";
+    static model = "onnx-community/granite-3.0-2b-instruct";
     static instance = null;
 
     static async getInstance(progress_callback = null) {
@@ -203,32 +203,40 @@ class LlmPipeline {
 // Send messages to the main thread to track the progress of the model loading.
 // Send a message to the main thread when the model is loaded and ready.
 async function loadLlm(model) {
+    console.log("Loading LLM model", model);
     // Tell the main thread we are starting
     self.postMessage({
-        type: llm, status: "loading", message: "Loading model...",
+        type: "llm", 
+        status: "loading", 
+        message: "Loading model...",
     });
-
+    
     const p = LlmPipeline;
+    
     if (p.model !== model) {
         // Invalidate model if different
         p.model = model;
-
         if (p.instance !== null) {
-            (await p.getInstance()).dispose();
+            try {
+                (await p.getInstance()).dispose();
+            } catch (disposeError) {
+                console.warn("Error disposing previous instance:", disposeError);
+            }
             p.instance = null;
         }
     }
-
+    
     // Load the pipeline and save it for future use.
     await p.getInstance((x) => {
         // We also add a progress callback to the pipeline so that we can
         // track model loading.
-        x.type = llm;
+        x.type = "llm";
         self.postMessage(x);
     });
-
+    
+    console.log("Llm loaded model", p.model);
     // Tell the main thread we are ready
-    self.postMessage({type: llm, status: "ready"});
+    self.postMessage({type: "llm", status: "ready"});
 }
 
 // Function: generate - Generate text using the language model.
