@@ -255,7 +255,7 @@ async function generate(data) {
     const prompt = [{role: "user", content: message}];
 
     // Generate the response using the language model.
-    const result = await generator(prompt, {max_new_tokens: 128});
+    const result = await generator(prompt, {max_new_tokens: 2048});
 
     // Retrieve the generated text from the result.
     let outputText;
