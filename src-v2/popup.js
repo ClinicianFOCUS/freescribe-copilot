@@ -1,10 +1,37 @@
 import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
 
+async function getRecordingState() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            target: 'offscreen', 
+            type: 'get-recording-state'
+        }, (response) => {
+            resolve(response || {isRecording: false, isPaused: false, transcription: ''});
+        });
+    });
+}
+
 async function init() {
     let config = await loadConfig();
-
     let logger = new Logger(config);
+
+    // Check current recording state
+    const recordingState = await getRecordingState();
+    if (recordingState.isRecording) {
+        recordButton.style.display = "none";
+        stopButton.style.display = "inline";
+        if (recordingState.isPaused) {
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "inline";
+        } else {
+            pauseButton.style.display = "inline";
+            resumeButton.style.display = "none";
+        }
+        if (recordingState.transcription) {
+            showTranscription(recordingState.transcription);
+        }
+    }
 
     let isRecording = false;
 
@@ -252,6 +279,11 @@ async function init() {
             showLoader();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
+            // Ensure recording controls stay visible
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
+            pauseButton.style.display = isPause ? "none" : "inline";
+            resumeButton.style.display = isPause ? "inline" : "none";
         },
         "pre-processing-prompt": (data) => {
             hideLoader();

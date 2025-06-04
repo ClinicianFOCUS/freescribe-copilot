@@ -20,6 +20,7 @@ let apiCounter = 0;
 let speechToText = '';
 
 let audioDeviceId = null;
+let lastTranscription = '';
 
 const RecorderState = {
     INITIALIZING: 'initializing',
@@ -470,6 +471,7 @@ function hideLoader() {
 async function updateGUI(text) {
     speechToText += text;
     speechToText = speechToText.trim();
+    lastTranscription = speechToText; // Store last transcription
 
     if (config.REALTIME && isRecording) {
         await setState(RecorderState.REALTIME_TRANSCRIBING, {
@@ -702,6 +704,12 @@ function getAudioDeviceList() {
 chrome.runtime.onMessage.addListener(async (message) => {
     if (message.target === 'offscreen') {
         switch (message.type) {
+            case 'get-recording-state':
+                return Promise.resolve({
+                    isRecording: isRecording,
+                    isPaused: isPause,
+                    transcription: speechToText
+                });
             case 'start-recording':
                 startRecording();
                 break;
