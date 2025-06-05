@@ -248,10 +248,10 @@ async function init() {
             copyNotesButton.style.display = "none";
             audioInputSelect.disabled = true;
             pauseButton.disabled = false;
-            isRecording = true;
             recordButton.style.display = "none";
-            resumeButton.style.display = "none";
+            // Always show pause button when recording starts/resumes
             pauseButton.style.display = "inline";
+            resumeButton.style.display = "none";
             stopButton.style.display = "inline";
             generateNotesButton.disabled = true;
         },
@@ -279,11 +279,12 @@ async function init() {
             showLoader();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
-            // Ensure recording controls stay visible
+            // Keep recording controls in sync with actual state
             recordButton.style.display = "none";
             stopButton.style.display = "inline";
-            pauseButton.style.display = isPause ? "none" : "inline";
-            resumeButton.style.display = isPause ? "inline" : "none";
+            // Use isPause from the message data to determine button state
+            pauseButton.style.display = data.isPause ? "none" : "inline";
+            resumeButton.style.display = data.isPause ? "inline" : "none";
         },
         "pre-processing-prompt": (data) => {
             hideLoader();

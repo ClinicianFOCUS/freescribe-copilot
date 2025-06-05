@@ -380,13 +380,10 @@ async function resumeRecording() {
     mediaRecorder.resume();
     isPause = false;
 
-    if (config.REALTIME) {
-        await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
-        });
-    } else {
-        await setState(RecorderState.RECORDING);
-    }
+    // Always set state to RECORDING when resuming, even in realtime mode
+    await setState(RecorderState.RECORDING, {
+        transcription: speechToText
+    });
 }
 
 async function transcribeAudio() {
@@ -475,7 +472,8 @@ async function updateGUI(text) {
 
     if (config.REALTIME && isRecording) {
         await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
+            transcription: speechToText,
+            isPause: isPause // Include pause state in realtime updates
         });
     } else {
         await setState(RecorderState.TRANSCRIPTION_COMPLETE, {
