@@ -21,9 +21,12 @@ async function init() {
     if (recordingState.isRecording) {
         recordButton.style.display = "none";
         stopButton.style.display = "inline";
+        pauseButton.style.display = "inline"; // Always show pause when recording
+        pauseButton.disabled = false; // Ensure enabled
         if (recordingState.isPaused) {
             pauseButton.style.display = "none";
             resumeButton.style.display = "inline";
+            resumeButton.disabled = false; // Ensure enabled
         } else {
             pauseButton.style.display = "inline";
             resumeButton.style.display = "none";
@@ -247,17 +250,19 @@ async function init() {
             notesElement.style.display = "none";
             copyNotesButton.style.display = "none";
             audioInputSelect.disabled = true;
+            // Always enable pause button when recording
             pauseButton.disabled = false;
             recordButton.style.display = "none";
-            // Always show pause button when recording starts/resumes
-            pauseButton.style.display = "inline";
-            resumeButton.style.display = "none";
+            // Show pause/resume based on isPause state from data
+            pauseButton.style.display = data?.isPause ? "none" : "inline";
+            resumeButton.style.display = data?.isPause ? "inline" : "none";
             stopButton.style.display = "inline";
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
             pauseButton.style.display = "none";
             resumeButton.style.display = "inline";
+            resumeButton.disabled = false; // Ensure resume is enabled
         },
         "recording-stopped": (data) => {
             audioInputSelect.disabled = false;
@@ -279,12 +284,15 @@ async function init() {
             showLoader();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
-            // Keep recording controls in sync with actual state
+            // Maintain recording controls state
             recordButton.style.display = "none";
             stopButton.style.display = "inline";
             // Use isPause from the message data to determine button state
             pauseButton.style.display = data.isPause ? "none" : "inline";
             resumeButton.style.display = data.isPause ? "inline" : "none";
+            // Always enable pause/resume buttons
+            pauseButton.disabled = false;
+            resumeButton.disabled = false;
         },
         "pre-processing-prompt": (data) => {
             hideLoader();

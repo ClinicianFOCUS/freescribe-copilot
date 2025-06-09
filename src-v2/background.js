@@ -102,6 +102,47 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 
+// Track tab changes to maintain recording state
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    chrome.runtime.sendMessage({
+        target: 'offscreen', 
+        type: 'get-recording-state'
+    }, (response) => {
+        if (response) {
+            chrome.runtime.sendMessage({
+                target: 'content',
+                type: 'recorder-state',
+                state: response.isRecording ? 
+                    (response.isPaused ? 'paused' : 'recording') : 'ready',
+                data: {
+                    transcription: response.transcription,
+                    isPause: response.isPaused // Include pause state
+                }
+            });
+        }
+    });
+});
+
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+    chrome.runtime.sendMessage({
+        target: 'offscreen', 
+        type: 'get-recording-state'
+    }, (response) => {
+        if (response) {
+            chrome.runtime.sendMessage({
+                target: 'content',
+                type: 'recorder-state',
+                state: response.isRecording ? 
+                    (response.isPaused ? 'paused' : 'recording') : 'ready',
+                data: {
+                    transcription: response.transcription,
+                    isPause: response.isPaused // Include pause state
+                }
+            });
+        }
+    });
+});
+
 // Listener for messages from other parts of the extension
 // Load the configuration and send it back to the sender
 // Open pages in a new tab

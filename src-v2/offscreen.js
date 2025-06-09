@@ -65,6 +65,11 @@ async function setState(newState, data = null) {
         newData.message = data.message;
     }
 
+    // Always maintain pause/resume state when recording
+    if (isRecording && (newState === RecorderState.RECORDING || newState === RecorderState.REALTIME_TRANSCRIBING)) {
+        newData.isPause = isPause;
+    }
+
     if (newState === RecorderState.INITIALIZING ||
         newState === RecorderState.LOADING ||
         newState === RecorderState.READY ||
@@ -371,10 +376,8 @@ async function pauseRecording() {
 
 async function resumeRecording() {
     if (!isPause) {
-        await setState(RecorderState.ERROR, {
-            message: "Called resumeRecording while not paused."
-        });
-        throw new Error('Called resumeRecording while not paused.');
+        // Just return instead of throwing error
+        return;
     }
 
     mediaRecorder.resume();
