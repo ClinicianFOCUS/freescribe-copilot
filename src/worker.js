@@ -165,7 +165,7 @@ class LlmPipeline {
     static async getInstance(progress_callback = null) {
         if (this.instance === null) {
             this.instance = pipeline(this.task, this.model, {
-                dtype: "q4", device: "webgpu", progress_callback,
+                dtype: "q4f16", device: "webgpu", progress_callback,
             });
         }
 
