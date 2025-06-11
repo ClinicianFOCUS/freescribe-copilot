@@ -85,7 +85,13 @@ async function setState(newState, data = null) {
 }
 
 async function sendState() {
-    await sendMessage('recorder-state', state);
+    await sendMessage('recorder-state', {
+        ...state,
+        data: {
+            ...state.data,
+            isPause: isPause // Ensure pause state is included
+        }
+    });
 }
 
 async function init() {

@@ -116,7 +116,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
                     (response.isPaused ? 'paused' : 'recording') : 'ready',
                 data: {
                     transcription: response.transcription,
-                    isPause: response.isPaused // Include pause state
+                    isPause: response.isPaused
                 }
             });
         }
@@ -136,7 +136,7 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
                     (response.isPaused ? 'paused' : 'recording') : 'ready',
                 data: {
                     transcription: response.transcription,
-                    isPause: response.isPaused // Include pause state
+                    isPause: response.isPaused
                 }
             });
         }

@@ -250,19 +250,22 @@ async function init() {
             notesElement.style.display = "none";
             copyNotesButton.style.display = "none";
             audioInputSelect.disabled = true;
-            // Always enable pause button when recording
             pauseButton.disabled = false;
+            // Always show stop button when recording (realtime or not)
             recordButton.style.display = "none";
+            stopButton.style.display = "inline";
             // Show pause/resume based on isPause state from data
             pauseButton.style.display = data?.isPause ? "none" : "inline";
             resumeButton.style.display = data?.isPause ? "inline" : "none";
-            stopButton.style.display = "inline";
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
+            // Ensure stop button remains visible when paused in realtime mode
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
             pauseButton.style.display = "none";
             resumeButton.style.display = "inline";
-            resumeButton.disabled = false; // Ensure resume is enabled
+            resumeButton.disabled = false;
         },
         "recording-stopped": (data) => {
             audioInputSelect.disabled = false;
