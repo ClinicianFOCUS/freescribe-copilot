@@ -2,10 +2,19 @@ import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
 
 async function init() {
-    let config = await loadConfig();
-
-    let logger = new Logger(config);
-
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    // Show loading UI immediately
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        let config = await loadConfig();
+        let logger = new Logger(config);
+    } catch (error) {
+        loadingOverlay.style.display = 'none';
+        console.error("Initialization error:", error);
+        throw error;
+    }
     let isRecording = false;
 
     let recordButton = document.getElementById("recordButton");
@@ -205,12 +214,15 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "loading": (data) => {
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "ready": (data) => {
+            loadingOverlay.style.display = 'none';
             recordButton.disabled = false;
         },
         "recording": (data) => {
@@ -291,6 +303,15 @@ async function init() {
     }
 
     const messageHandler = {
+        "show-loading": () => {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        },
+        "hide-loading": () => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        },
+        "models-ready": () => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        },
         "recorder-state": (message) => {
             const {state, data} = message;
             console.log("Recorder state: ", state, data);
