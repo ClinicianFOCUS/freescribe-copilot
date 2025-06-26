@@ -34,7 +34,20 @@ module.exports = (env) => {
                 },
                 {
                     test: /\.scss$/,
-                    use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        "css-loader",
+                        {
+                            loader: "sass-loader",
+                            options: {
+                                sassOptions: {
+                                    loadPaths: [path.resolve(__dirname, "node_modules")],
+                                    quietDeps: true,
+                                    style: "expanded"
+                                }
+                            }
+                        }
+                    ],
                 },
             ],
         },
