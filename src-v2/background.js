@@ -58,20 +58,19 @@ async function getOffscreenDocument() {
 
 // Function: loadExtension - Load the extension on the current tab.
 // Check if an offscreen document already exists and create a new one if it doesn't.
-// Inject the CSS and content script into the current tab.
-// Add the tab to the list of active tabs.
 async function loadExtension() {
-    // Get Offscreen document if present in the extension context
-    const offscreenDocument = await getOffscreenDocument();
-
-    // Only create a new offscreen document if one doesn't already exist
-    if (!offscreenDocument) {
-        // Create a new offscreen document
-        await chrome.offscreen.createDocument({
-            url: 'offscreen.html',
-            reasons: ['USER_MEDIA', 'WORKERS'],
-            justification: 'Recording from chrome.tabCapture API'
-        });
+    try {
+        const offscreenDocument = await getOffscreenDocument();
+        if (!offscreenDocument) {
+            await chrome.offscreen.createDocument({
+                url: 'offscreen.html',
+                reasons: ['USER_MEDIA', 'WORKERS'],
+                justification: 'Recording from chrome.tabCapture API'
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load extension:', error);
+        throw error; // Re-throw to allow caller to handle
     }
 }
 
@@ -94,11 +93,22 @@ async function closeExtension() {
 }
 
 // Listener for the extension icon click
-// If the extension is already loaded for the host, unload it. Otherwise, load it.
 chrome.action.onClicked.addListener(async (tab) => {
-    await loadExtension();
-    chrome.action.setPopup({popup: 'popup.html'});
-    chrome.action.openPopup();
+    try {
+        // Initialize extension infrastructure
+        await loadExtension();
+        
+        // Set popup for future clicks (without forcing it open)
+        chrome.action.setPopup({popup: 'popup.html'});
+        
+        // Initialize recording system
+        await chrome.runtime.sendMessage({
+            target: 'offscreen', 
+            type: 'init'
+        });
+    } catch (error) {
+        console.error('Extension initialization error:', error);
+    }
 });
 
 

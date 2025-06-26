@@ -35,7 +35,7 @@ async function init() {
             showTranscription(recordingState.transcription);
         }
     }
-
+  
     let isRecording = false;
 
     let recordButton = document.getElementById("recordButton");
@@ -235,12 +235,15 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "loading": (data) => {
+            loadingOverlay.style.display = 'flex';
             recordButton.disabled = true;
         },
         "ready": (data) => {
+            loadingOverlay.style.display = 'none';
             recordButton.disabled = false;
         },
         "recording": (data) => {
@@ -335,6 +338,15 @@ async function init() {
     }
 
     const messageHandler = {
+        "show-loading": () => {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        },
+        "hide-loading": () => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        },
+        "models-ready": () => {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        },
         "recorder-state": (message) => {
             const {state, data} = message;
             console.log("Recorder state: ", state, data);

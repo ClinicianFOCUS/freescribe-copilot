@@ -51,6 +51,13 @@ let state = {
 };
 
 async function setState(newState, data = null) {
+    // Show/hide loading overlay based on state
+    if (newState === RecorderState.INITIALIZING || newState === RecorderState.LOADING) {
+        await sendMessage('show-loading');
+    } else if (newState === RecorderState.READY) {
+        await sendMessage('hide-loading');
+    }
+
     let newData = state.data
 
     if (data?.transcription) {
