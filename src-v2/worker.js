@@ -5,11 +5,16 @@
 // It sends messages back to the main thread with the results of the tasks.
 
 import {
-    pipeline, WhisperTextStreamer
+    pipeline, WhisperTextStreamer, env
 } from "./transformers.min.js";
 
 // flag to prevent multiple transcriptions at once
 let isTranscribing = false;
+
+//update to undefined to prevent loading the wasm file remotely
+// local one is packaged into the build.
+// setting undefined will fix loading error in service worker
+env.backends.onnx.wasm.wasmPaths = undefined;
 
 // Define message types
 const text2speech = "s2t";

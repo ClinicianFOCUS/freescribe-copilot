@@ -4,7 +4,7 @@
   "description": "Chrome and Firefox Plugin to assist healthcare providers interacting with patients with transcribing and preparing notes, and other active assistance; under development.",
   "main": "index.js",
   "dependencies": {
-    "@huggingface/transformers": "^3.0.2",
+    "@huggingface/transformers": "^3.6.3",
     "bootstrap": "^5.3.6",
     "toastr": "^2.1.4",
     "ts-loader": "^9.5.1"
