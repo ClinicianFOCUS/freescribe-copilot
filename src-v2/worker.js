@@ -11,9 +11,9 @@ import {
 // flag to prevent multiple transcriptions at once
 let isTranscribing = false;
 
-//update to undefined to prevent loading the wasm file remotely
-// local one is packaged into the build.
-// setting undefined will fix loading error in service worker
+// Set wasmPaths to undefined to prevent remote loading of the WASM file.
+// The local WASM file is packaged into the build.
+// This resolves a loading error in the service worker.
 env.backends.onnx.wasm.wasmPaths = undefined;
 
 // Define message types
