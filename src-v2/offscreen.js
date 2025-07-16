@@ -20,6 +20,7 @@ let apiCounter = 0;
 let speechToText = '';
 
 let audioDeviceId = null;
+let lastTranscription = '';
 
 const RecorderState = {
     INITIALIZING: 'initializing',
@@ -71,6 +72,11 @@ async function setState(newState, data = null) {
         newData.message = data.message;
     }
 
+    // Always maintain pause/resume state when recording
+    if (isRecording && (newState === RecorderState.RECORDING || newState === RecorderState.REALTIME_TRANSCRIBING)) {
+        newData.isPause = isPause;
+    }
+
     if (newState === RecorderState.INITIALIZING ||
         newState === RecorderState.LOADING ||
         newState === RecorderState.READY ||
@@ -86,7 +92,13 @@ async function setState(newState, data = null) {
 }
 
 async function sendState() {
-    await sendMessage('recorder-state', state);
+    await sendMessage('recorder-state', {
+        ...state,
+        data: {
+            ...state.data,
+            isPause: isPause // Ensure pause state is included
+        }
+    });
 }
 
 async function init() {
@@ -377,22 +389,17 @@ async function pauseRecording() {
 
 async function resumeRecording() {
     if (!isPause) {
-        await setState(RecorderState.ERROR, {
-            message: "Called resumeRecording while not paused."
-        });
-        throw new Error('Called resumeRecording while not paused.');
+        // Just return instead of throwing error
+        return;
     }
 
     mediaRecorder.resume();
     isPause = false;
 
-    if (config.REALTIME) {
-        await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
-        });
-    } else {
-        await setState(RecorderState.RECORDING);
-    }
+    // Always set state to RECORDING when resuming, even in realtime mode
+    await setState(RecorderState.RECORDING, {
+        transcription: speechToText
+    });
 }
 
 async function transcribeAudio() {
@@ -477,10 +484,12 @@ function hideLoader() {
 async function updateGUI(text) {
     speechToText += text;
     speechToText = speechToText.trim();
+    lastTranscription = speechToText; // Store last transcription
 
     if (config.REALTIME && isRecording) {
         await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
+            transcription: speechToText,
+            isPause: isPause // Include pause state in realtime updates
         });
     } else {
         await setState(RecorderState.TRANSCRIPTION_COMPLETE, {
@@ -709,6 +718,12 @@ function getAudioDeviceList() {
 chrome.runtime.onMessage.addListener(async (message) => {
     if (message.target === 'offscreen') {
         switch (message.type) {
+            case 'get-recording-state':
+                return Promise.resolve({
+                    isRecording: isRecording,
+                    isPaused: isPause,
+                    transcription: speechToText
+                });
             case 'start-recording':
                 startRecording();
                 break;

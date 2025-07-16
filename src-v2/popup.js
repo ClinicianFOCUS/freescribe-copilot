@@ -1,20 +1,41 @@
 import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
 
+async function getRecordingState() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            target: 'offscreen', 
+            type: 'get-recording-state'
+        }, (response) => {
+            resolve(response || {isRecording: false, isPaused: false, transcription: ''});
+        });
+    });
+}
+
 async function init() {
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    
-    // Show loading UI immediately
-    loadingOverlay.style.display = 'flex';
-    
-    try {
-        let config = await loadConfig();
-        let logger = new Logger(config);
-    } catch (error) {
-        loadingOverlay.style.display = 'none';
-        console.error("Initialization error:", error);
-        throw error;
+    let config = await loadConfig();
+    let logger = new Logger(config);
+
+    // Check current recording state
+    const recordingState = await getRecordingState();
+    if (recordingState.isRecording) {
+        recordButton.style.display = "none";
+        stopButton.style.display = "inline";
+        pauseButton.style.display = "inline"; // Always show pause when recording
+        pauseButton.disabled = false; // Ensure enabled
+        if (recordingState.isPaused) {
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "inline";
+            resumeButton.disabled = false; // Ensure enabled
+        } else {
+            pauseButton.style.display = "inline";
+            resumeButton.style.display = "none";
+        }
+        if (recordingState.transcription) {
+            showTranscription(recordingState.transcription);
+        }
     }
+  
     let isRecording = false;
 
     let recordButton = document.getElementById("recordButton");
@@ -233,16 +254,21 @@ async function init() {
             copyNotesButton.style.display = "none";
             audioInputSelect.disabled = true;
             pauseButton.disabled = false;
-            isRecording = true;
+            // Always show stop button when recording (realtime or not)
             recordButton.style.display = "none";
-            resumeButton.style.display = "none";
-            pauseButton.style.display = "inline";
             stopButton.style.display = "inline";
+            // Show pause/resume based on isPause state from data
+            pauseButton.style.display = data?.isPause ? "none" : "inline";
+            resumeButton.style.display = data?.isPause ? "inline" : "none";
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
+            // Ensure stop button remains visible when paused in realtime mode
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
             pauseButton.style.display = "none";
             resumeButton.style.display = "inline";
+            resumeButton.disabled = false;
         },
         "recording-stopped": (data) => {
             audioInputSelect.disabled = false;
@@ -264,6 +290,15 @@ async function init() {
             showLoader();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
+            // Maintain recording controls state
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
+            // Use isPause from the message data to determine button state
+            pauseButton.style.display = data.isPause ? "none" : "inline";
+            resumeButton.style.display = data.isPause ? "inline" : "none";
+            // Always enable pause/resume buttons
+            pauseButton.disabled = false;
+            resumeButton.disabled = false;
         },
         "pre-processing-prompt": (data) => {
             hideLoader();
