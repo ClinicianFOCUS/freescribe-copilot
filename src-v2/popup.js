@@ -307,6 +307,10 @@ async function init() {
             showTranscription(data.transcription);
             notesElement.textContent = "Pre Processing data...";
             notesElement.style.display = "block";
+            
+            // Show loading overlay with pre-processing message
+            document.getElementById('loadingText').textContent = 'Pre-processing data...';
+            document.getElementById('loadingOverlay').style.display = 'flex';
         },
         "generating-notes": (data) => {
             generateNotesButton.disabled = true;
@@ -314,6 +318,10 @@ async function init() {
             showTranscription(data.transcription);
             notesElement.textContent = "Generating notes...";
             notesElement.style.display = "block";
+            
+            // Show loading overlay with generating notes message
+            document.getElementById('loadingText').textContent = 'Generating note...';
+            document.getElementById('loadingOverlay').style.display = 'flex';
         },
         "post-processing-prompt": (data) => {
             generateNotesButton.disabled = true;
@@ -321,6 +329,10 @@ async function init() {
             showTranscription(data.transcription);
             notesElement.textContent = "Post Processing data...";
             notesElement.style.display = "block";
+            
+            // Show loading overlay with post processing message
+            document.getElementById('loadingText').textContent = 'Post processing notes...';
+            document.getElementById('loadingOverlay').style.display = 'flex';
         },
         "complete": (data) => {
             isRecording = false;
@@ -328,12 +340,20 @@ async function init() {
             recordButton.disabled = false;
             showTranscription(data.transcription);
             showNotes(data.notes);
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('loadingText').textContent = 'Loading models...'; // Reset text
         },
         "error": (data) => {
             isRecording = false;
             recordButton.disabled = false;
             audioInputSelect.disabled = false;
-            showErrorMessage(data.message)
+            showErrorMessage(data.message);
+            
+            // Hide loading overlay on error
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('loadingText').textContent = 'Loading models...'; // Reset text
         }
     }
 
