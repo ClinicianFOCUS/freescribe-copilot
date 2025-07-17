@@ -39,10 +39,12 @@ export class LoadingSpinner {
         }
     }
 
-    reset() {
-        this.hide();
-        if (this.loadingText) {
-            this.loadingText.textContent = 'Loading models...';
-        }
-    }
++    static DEFAULT_LOADING_MESSAGE = 'Loading models...';
++
++    reset() {
++        this.hide();
++        if (this.loadingText) {
++            this.loadingText.textContent = LoadingSpinner.DEFAULT_LOADING_MESSAGE;
++        }
++    }
 }
