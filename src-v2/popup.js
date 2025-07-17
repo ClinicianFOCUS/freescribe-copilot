@@ -334,6 +334,7 @@ async function init() {
             recordButton.disabled = false;
             audioInputSelect.disabled = false;
             showErrorMessage(data.message)
+            userInput.textContent = data.transcription || "";
         }
     }
 
