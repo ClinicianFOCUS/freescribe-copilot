@@ -331,6 +331,8 @@ async function init() {
             audioInputSelect.disabled = false;
             showErrorMessage(data.message);
             loadingSpinner.reset();
+            userInput.textContent = data.transcription || "";
+
         }
     }
 
