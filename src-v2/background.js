@@ -198,8 +198,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 sendResponse({ history: notesHistory, success: true });
             } catch (error) {
                 console.error("Error getting notes history:", error);
-                    sendResponse({ history: [], success: false, error: error.message });
-                }
+                sendResponse({ history: [], success: false, error: error.message });
+            }
                 return true;
         } else if (message.type === 'clearHistory') {    
             try {
