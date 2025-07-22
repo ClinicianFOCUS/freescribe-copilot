@@ -189,7 +189,7 @@ async function transcribe(data) {
 // and dispose of the model when it is no longer needed
 class LlmPipeline {
     static task = "text-generation";
-    static model = "onnx-community/Llama-3.2-1B-Instruct-q4f16";
+    static model = "onnx-community/Phi-3.5-mini-instruct-onnx-web";
     static instance = null;
 
     static async getInstance(progress_callback = null) {
