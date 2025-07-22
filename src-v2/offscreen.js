@@ -158,7 +158,7 @@ async function loadConfigData() {
 
 const llmHandler = {
     "pre-processing": (text, extra) => generateNotes(extra.text, text),
-    "notes-processing": (text, extra) => postProcessData(text, extra.facts),
+    "notes-processing": (text, extra) => postProcessData(text, extra.facts, extra.text),
     "post-processing": (text, extra) => showGeneratedNotes(text),
 };
 
@@ -626,7 +626,7 @@ async function generateNotes(text, facts) {
     try {
         let notes = await llmApiCall(prompt);
 
-        await postProcessData(notes, facts);
+        await postProcessData(notes, facts, text);
     } catch (error) {
         await setState(RecorderState.ERROR, {
             message: "Unable to generate notes."
@@ -634,7 +634,7 @@ async function generateNotes(text, facts) {
     }
 }
 
-async function postProcessData(text, facts) {
+async function postProcessData(text, facts, originalTranscription) {
     logger.log("post processing notes");
     let notes = text;
     if (config.POST_PROCESSING) {
@@ -657,7 +657,7 @@ async function postProcessData(text, facts) {
                     message: postProcessingPrompt,
                     type: "post-processing",
                     extra: {
-                        text: text,
+                        text: originalTranscription,
                         facts: facts,
                     },
                 },
@@ -674,14 +674,14 @@ async function postProcessData(text, facts) {
         }
     }
 
-    await showGeneratedNotes(notes);
+    await showGeneratedNotes(notes, originalTranscription);
 }
 
-async function showGeneratedNotes(notes) {
+async function showGeneratedNotes(notes, transcription) {
     await setState(RecorderState.COMPLETE, {
         notes: notes
     });
-    sendMessage('save-notes', notes, 'background');
+    sendMessage('save-notes', { note: notes, transcription: transcription }, 'background');
 }
 
 function getAudioDeviceList() {

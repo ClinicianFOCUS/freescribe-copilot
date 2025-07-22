@@ -27,20 +27,47 @@ async function init(){
         let dateTime = new Date(historyAccordion.time).toLocaleString();
 
         html += `<div class="accordion-item">
-                <h2 class="accordion-header">
-                  <buttonn class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#historyAccordion${index}" aria-expanded="false" aria-controls="historyAccordion${index}"
-                  >${dateTime}</button>
-                </h2>
-                <div id="historyAccordion${index}" class="accordion-collapse collapse" data-bs-parent="#${accordionId}">
-                  <div class="accordion-body">
-                    <button data-copy-id="history-note-${index}" type="button" class="btn btn-sm btn-secondary copy-history-btn">
-                      <i class="fas fa-copy"></i> Copy Notes
-                    </button>
-                    <pre class="history-notes" id="history-note-${index}">${historyAccordion.note}</pre>
-                  </div>
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#historyAccordion${index}" aria-expanded="false" aria-controls="historyAccordion${index}"
+          >${dateTime}</button>
+        </h2>
+        <div id="historyAccordion${index}" class="accordion-collapse collapse" data-bs-parent="#${accordionId}">
+          <div class="accordion-body">
+            ${historyAccordion.transcription ? `
+            <div class="mb-3">
+              <div class="row align-items-center mb-2">
+                <div class="col-6">
+                  <h6 class="mb-0 d-flex align-items-center"><i class="fas fa-microphone me-2"></i>Transcription</h6>
                 </div>
-              </div>`;
+                <div class="col-6 text-end">
+                  <button data-copy-id="history-transcription-${index}" type="button" class="btn btn-sm btn-secondary copy-history-btn d-flex align-items-center ms-auto">
+                    <i class="fas fa-copy me-2"></i>Copy Transcription
+                  </button>
+                </div>
+              </div>
+              <div class="transcription-container">
+                <pre class="history-transcription" id="history-transcription-${index}">${historyAccordion.transcription}</pre>
+              </div>
+            </div>
+            <hr>
+            ` : ''}
+            <div class="row align-items-center mb-2">
+              <div class="col-6">
+                <h6 class="mb-0 d-flex align-items-center"><i class="fas fa-file-alt me-2"></i>Generated Notes</h6>
+              </div>
+              <div class="col-6 text-end">
+                <button data-copy-id="history-note-${index}" type="button" class="btn btn-sm btn-secondary copy-history-btn d-flex align-items-center ms-auto">
+                  <i class="fas fa-copy me-2"></i>Copy Notes
+                </button>
+              </div>
+            </div>
+            <div class="notes-container">
+              <pre class="history-notes" id="history-note-${index}">${historyAccordion.note}</pre>
+            </div>
+          </div>
+        </div>
+      </div>`;
     }
 
     // Render the history accordion
@@ -51,17 +78,18 @@ async function init(){
 
     // Function to copy the history notes to the clipboard
     function copyHistory(event) {
-        let historyNotesId = event.currentTarget.getAttribute("data-copy-id");
+        let historyContentId = event.currentTarget.getAttribute("data-copy-id");
 
         navigator.clipboard
-            .writeText(document.getElementById(historyNotesId).textContent)
+            .writeText(document.getElementById(historyContentId).textContent)
             .then(() => {
-                toastr.info(`history notes copied to clipboard!`);
+                const contentType = historyContentId.includes('transcription') ? 'transcription' : 'notes';
+                toastr.info(`History ${contentType} copied to clipboard!`);
             })
             .catch((err) => {
-                toastr.info(`Failed to copy history notes. Please try again.`);
+                const contentType = historyContentId.includes('transcription') ? 'transcription' : 'notes';
+                toastr.info(`Failed to copy history ${contentType}. Please try again.`);
             });
-
     }
 
     // Add the click event to the copy history buttons

@@ -1,6 +1,4 @@
 import {loadConfig} from "../src/config";
-import {saveNotesHistory} from "../src/history";
-
 // Listener for when the extension is installed or updated and if installed,
 // open the welcome page in a new tab to show the user the new features and ask user permission to the microphone
 // Also, create a context menu item to start the extension
@@ -157,8 +155,16 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 // Load the configuration and send it back to the sender
 // Open pages in a new tab
 // Forward messages to the offscreen document or content script based on the target
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
+// In-memory storage for notes history
+let notesHistory = [];
+
+// Listen for messages from content scripts/popup/pages
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => { 
+    // Handle legacy action-based messages
+    // Handle target-based messages
     if (message.target === "background") {
+        console.log("Background.js received message:", message.action || message.type);
         if (message.type === "load-config") {
             // Load the configuration
             loadConfig().then((config) => {
@@ -167,10 +173,48 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return true;
         } else if (message.type === "reload-extension") {
             closeExtension();
+            sendResponse({ success: true });
+            return true;
         } else if (message.type === 'save-notes') {
-            saveNotesHistory(message.data);
+            console.log("Saving notes:", message)
+            try {
+                let new_note = {
+                    time: new Date().toString(),
+                    note: message.data.note,
+                    transcription: message.data.transcription
+                };
+                
+                notesHistory = [new_note, ...notesHistory].slice(0, 20);
+                console.log("Notes history saved to background script memory:", notesHistory.length, "items");
+                sendResponse({ success: true, count: notesHistory.length });
+            } catch (error) {
+                console.error("Error saving notes history:", error);
+                sendResponse({ success: false, error: error.message });
+            }
+            return true;
+        } else if (message.type === 'getHistory') {
+            try {
+                console.log("Getting notes history from background script memory:", notesHistory.length, "items");
+                sendResponse({ history: notesHistory, success: true });
+            } catch (error) {
+                console.error("Error getting notes history:", error);
+                sendResponse({ history: [], success: false, error: error.message });
+            }
+                return true;
+        } else if (message.type === 'clearHistory') {    
+            try {
+                notesHistory = [];
+                console.log("Notes history cleared from background script memory");
+                sendResponse({ success: true });
+            } catch (error) {
+                console.error("Error clearing notes history:", error);
+                sendResponse({ success: false, error: error.message });
+            }
+            return true;
         }
-    } else if (message.target === 'content' && message.type === 'recorder-state') {
+    }
+    // Handle recorder state updates
+    else if (message.target === 'content' && message.type === 'recorder-state') {
         let {data} = message;
 
         let text = '';
@@ -198,5 +242,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         chrome.action.setBadgeText({text});
         chrome.action.setBadgeBackgroundColor({color});
+        sendResponse({ success: true });
+        return true;
+    }
+    else {
+        console.log("Unhandled message:", message);
+        sendResponse({ success: false, error: "Message not handled" });
+        return true;
     }
 });

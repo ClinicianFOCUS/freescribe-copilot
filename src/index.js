@@ -703,7 +703,7 @@ document
 
             html += `<div class="accordion-item">
                 <h2 class="accordion-header">
-                  <buttonn class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                     data-bs-target="#historyAccordian${index}" aria-expanded="false" aria-controls="historyAccordian${index}"
                   >${dateTime}</button>
                 </h2>

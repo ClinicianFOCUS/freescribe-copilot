@@ -1,6 +1,5 @@
 import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
-import {saveNotesHistory} from "../src/history";
 
 async function init() {
     if (!document.getElementById("free-scribe-extension")) {
@@ -260,7 +259,6 @@ async function init() {
             notesElement.textContent = notes;
             notesElement.style.display = "block";
             copyNotesButton.style.display = "block";
-            saveNotesHistory(notes);
         }
 
         const hideNotes = () => {
