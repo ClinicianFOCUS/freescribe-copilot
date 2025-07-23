@@ -496,7 +496,7 @@ async function llmApiCall(prompt) {
             }, body: JSON.stringify({
                 model: config.LLM_MODEL, messages: [{
                     role: "user", content: prompt,
-                },], temperature: 0.7, max_tokens: 800,
+                },], temperature: 0.7, max_tokens: 2048,
             }),
         });
 
