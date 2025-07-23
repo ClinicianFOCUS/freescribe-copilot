@@ -1,5 +1,5 @@
-import {loadConfig} from "../src/config.js";
-import {Logger} from "../src/logger.js";
+import {loadConfig} from "./config.js";
+import {Logger} from "./logger.js";
 
 async function init() {
     if (!document.getElementById("free-scribe-extension")) {

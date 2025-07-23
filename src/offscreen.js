@@ -1,7 +1,6 @@
-import {Logger} from "../src/logger";
-import {SilenceDetector} from "../src/silenceDetector";
-import {sanitizeInput} from "../src/helpers";
-import {saveNotesHistory} from "../src/history";
+import {Logger} from "./logger";
+import {SilenceDetector} from "./silenceDetector";
+import {sanitizeInput} from "./helpers";
 
 let config;
 let mediaRecorder;

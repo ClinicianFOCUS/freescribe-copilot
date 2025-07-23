@@ -10,13 +10,9 @@
     "ts-loader": "^9.5.1"
   },
   "scripts": {
-    "watch": "webpack --watch --config webpack.v2.js",
-    "dev": "webpack --config webpack.v2.js",
-    "prod": "webpack --config webpack.v2.js --env production",
-    "watch-v1": "webpack --watch --config webpack.v1.js",
-    "watch-v1-firefox": "webpack --watch --config webpack.v1.js --env firefox",
-    "dev-v1": "webpack --config webpack.v1.js && webpack --config webpack.v1.js --env firefox",
-    "prod-v1": "webpack --config webpack.v1.js --env production && webpack --config webpack.v1.js --env production --env firefox"
+    "watch": "webpack --watch --config webpack.config.js",
+    "dev": "webpack --config webpack.config.js",
+    "prod": "webpack --config webpack.config.js --env production"
   },
   "repository": {
     "type": "git",
