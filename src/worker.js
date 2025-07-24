@@ -23,7 +23,7 @@ const llm = "llm";
 // Define model factories
 // Ensures only one model is created of each type
 // provides progress callback to track model loading
-// and dispose of the model when it is no longer neededS
+// and dispose of the model when it is no longer needed
 class TranscriptionPipeline {
     static task = "automatic-speech-recognition";
     static model = "onnx-community/whisper-base";

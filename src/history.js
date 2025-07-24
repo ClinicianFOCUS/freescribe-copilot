@@ -42,7 +42,7 @@ async function init(){
     // Get the notes history
     let notes_history = await getHistory();
 
-    // ID for the history accordion elementS
+    // ID for the history accordion elements
     const accordionId = "historyAccordion";
 
     let html = ``;
