@@ -518,7 +518,7 @@ async function llmApiCall(prompt) {
                     },
                 ],
                 temperature: 0.7,
-                max_tokens: 800,
+                max_tokens: 2048,
             }),
         });
 
