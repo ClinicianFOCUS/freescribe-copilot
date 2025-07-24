@@ -210,7 +210,7 @@ async function generate(data) {
 
     const prompt = [{role: "user", content: message}];
 
-    const result = await generator(prompt, {max_new_tokens: 128});
+    const result = await generator(prompt, {max_new_tokens: 2048});
 
     let outputText;
     try {
