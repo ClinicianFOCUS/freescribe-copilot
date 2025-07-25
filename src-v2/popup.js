@@ -1,11 +1,43 @@
 import {loadConfig} from "../src/config.js";
 import {Logger} from "../src/logger.js";
+import {LoadingSpinner} from "./utils/UI/LoadingSpinner.js";
+
+async function getRecordingState() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+            target: 'offscreen', 
+            type: 'get-recording-state'
+        }, (response) => {
+            resolve(response || {isRecording: false, isPaused: false, transcription: ''});
+        });
+    });
+}
 
 async function init() {
     let config = await loadConfig();
-
     let logger = new Logger(config);
+    let loadingSpinner = new LoadingSpinner();
 
+    // Check current recording state
+    const recordingState = await getRecordingState();
+    if (recordingState.isRecording) {
+        recordButton.style.display = "none";
+        stopButton.style.display = "inline";
+        pauseButton.style.display = "inline"; // Always show pause when recording
+        pauseButton.disabled = false; // Ensure enabled
+        if (recordingState.isPaused) {
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "inline";
+            resumeButton.disabled = false; // Ensure enabled
+        } else {
+            pauseButton.style.display = "inline";
+            resumeButton.style.display = "none";
+        }
+        if (recordingState.transcription) {
+            showTranscription(recordingState.transcription);
+        }
+    }
+  
     let isRecording = false;
 
     let recordButton = document.getElementById("recordButton");
@@ -87,7 +119,6 @@ async function init() {
 
     let copyNotesToClipboard = (text, source = "notes") => {
         if (text.trim() === "") {
-            // toastr.info(`No ${source} to copy.`);
             return;
         }
 
@@ -98,16 +129,7 @@ async function init() {
             })
             .catch((err) => {
                 logger.error("Failed to copy: ", err);
-                // toastr.info(`Failed to copy ${source}. Please try again.`);
             });
-    }
-
-    let showLoader = () => {
-        document.getElementById("s2t-loader").style.display = "block";
-    }
-
-    let hideLoader = () => {
-        document.getElementById("s2t-loader").style.display = "none";
     }
 
     let startMicStream = () => {
@@ -205,12 +227,15 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
+            loadingSpinner.show('Initializing...');
             recordButton.disabled = true;
         },
         "loading": (data) => {
+            loadingSpinner.show('Loading models...');
             recordButton.disabled = true;
         },
         "ready": (data) => {
+            loadingSpinner.hide();
             recordButton.disabled = false;
         },
         "recording": (data) => {
@@ -221,16 +246,21 @@ async function init() {
             copyNotesButton.style.display = "none";
             audioInputSelect.disabled = true;
             pauseButton.disabled = false;
-            isRecording = true;
+            // Always show stop button when recording (realtime or not)
             recordButton.style.display = "none";
-            resumeButton.style.display = "none";
-            pauseButton.style.display = "inline";
             stopButton.style.display = "inline";
+            // Show pause/resume based on isPause state from data
+            pauseButton.style.display = data?.isPause ? "none" : "inline";
+            resumeButton.style.display = data?.isPause ? "inline" : "none";
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
+            // Ensure stop button remains visible when paused in realtime mode
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
             pauseButton.style.display = "none";
             resumeButton.style.display = "inline";
+            resumeButton.disabled = false;
         },
         "recording-stopped": (data) => {
             audioInputSelect.disabled = false;
@@ -241,25 +271,35 @@ async function init() {
             pauseButton.style.display = "inline";
         },
         "transcribing": (data) => {
-            showLoader();
+            loadingSpinner.showS2T();
         },
         "transcription-complete": (data) => {
             showTranscription(data.transcription);
-            hideLoader();
+            loadingSpinner.hideS2T();
             generateNotesButton.disabled = false;
         },
         "realtime-transcribing": (data) => {
-            showLoader();
+            loadingSpinner.showS2T();
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
+            // Maintain recording controls state
+            recordButton.style.display = "none";
+            stopButton.style.display = "inline";
+            // Use isPause from the message data to determine button state
+            pauseButton.style.display = data.isPause ? "none" : "inline";
+            resumeButton.style.display = data.isPause ? "inline" : "none";
+            // Always enable pause/resume buttons
+            pauseButton.disabled = false;
+            resumeButton.disabled = false;
         },
         "pre-processing-prompt": (data) => {
-            hideLoader();
+            loadingSpinner.hideS2T();
             generateNotesButton.disabled = true;
             recordButton.disabled = true;
             showTranscription(data.transcription);
             notesElement.textContent = "Pre Processing data...";
             notesElement.style.display = "block";
+            loadingSpinner.show('Pre-processing data...');
         },
         "generating-notes": (data) => {
             generateNotesButton.disabled = true;
@@ -267,6 +307,7 @@ async function init() {
             showTranscription(data.transcription);
             notesElement.textContent = "Generating notes...";
             notesElement.style.display = "block";
+            loadingSpinner.show('Generating note...');
         },
         "post-processing-prompt": (data) => {
             generateNotesButton.disabled = true;
@@ -274,6 +315,7 @@ async function init() {
             showTranscription(data.transcription);
             notesElement.textContent = "Post Processing data...";
             notesElement.style.display = "block";
+            loadingSpinner.show('Post processing notes...');
         },
         "complete": (data) => {
             isRecording = false;
@@ -281,16 +323,29 @@ async function init() {
             recordButton.disabled = false;
             showTranscription(data.transcription);
             showNotes(data.notes);
+            loadingSpinner.reset();
         },
         "error": (data) => {
             isRecording = false;
             recordButton.disabled = false;
             audioInputSelect.disabled = false;
-            showErrorMessage(data.message)
+            showErrorMessage(data.message);
+            loadingSpinner.reset();
+            userInput.textContent = data.transcription || "";
+
         }
     }
 
     const messageHandler = {
+        "show-loading": () => {
+            loadingSpinner.show();
+        },
+        "hide-loading": () => {
+            loadingSpinner.hide();
+        },
+        "models-ready": () => {
+            loadingSpinner.hide();
+        },
         "recorder-state": (message) => {
             const {state, data} = message;
             console.log("Recorder state: ", state, data);
@@ -328,7 +383,6 @@ async function init() {
     // get audio devices
     getAudioDevices();
 }
-
 
 init();
 

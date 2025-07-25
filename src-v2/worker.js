@@ -5,11 +5,16 @@
 // It sends messages back to the main thread with the results of the tasks.
 
 import {
-    pipeline, WhisperTextStreamer
+    pipeline, WhisperTextStreamer, env
 } from "./transformers.min.js";
 
 // flag to prevent multiple transcriptions at once
 let isTranscribing = false;
+
+// Set wasmPaths to undefined to prevent remote loading of the WASM file.
+// The local WASM file is packaged into the build.
+// This resolves a loading error in the service worker.
+env.backends.onnx.wasm.wasmPaths = undefined;
 
 // Define message types
 const text2speech = "s2t";
@@ -184,7 +189,7 @@ async function transcribe(data) {
 // and dispose of the model when it is no longer needed
 class LlmPipeline {
     static task = "text-generation";
-    static model = "onnx-community/Llama-3.2-1B-Instruct-q4f16";
+    static model = "onnx-community/Phi-3.5-mini-instruct-onnx-web";
     static instance = null;
 
     static async getInstance(progress_callback = null) {
@@ -247,7 +252,7 @@ async function generate(data) {
     const prompt = [{role: "user", content: message}];
 
     // Generate the response using the language model.
-    const result = await generator(prompt, {max_new_tokens: 128});
+    const result = await generator(prompt, {max_new_tokens: 2048});
 
     // Retrieve the generated text from the result.
     let outputText;

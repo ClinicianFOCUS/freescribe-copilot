@@ -94,6 +94,14 @@
                     name="transcriptionUrl"
                     class="form-control transcription-server-form"
             />
+            <div class="form-text mt-1">
+              <strong>Note:</strong> If you're using a self-signed certificate for a local API, you may need to manually trust it:
+              <ul>
+                <li>Open the transcription server URL directly in your browser (e.g., <code>https://localhost:5000</code>).</li>
+                <li>Click <strong>"Advanced"</strong> and then <strong>"Proceed anyway"</strong> to trust the certificate.</li>
+                <li>This allows the browser to connect to the server without SSL errors.</li>
+              </ul>
+            </div>
           </div>
           <div class="transcriptionServerSettings config-item">
             <label for="transcriptionApiKey"
@@ -192,6 +200,14 @@
                     name="llmUrl"
                     class="form-control llm-server-form"
             />
+            <div class="form-text mt-1">
+              <strong>Note:</strong> If you're using a self-signed certificate for a local API, you may need to manually trust it:
+              <ul>
+                <li>Open the transcription server URL directly in your browser (e.g., <code>https://localhost:5000</code>).</li>
+                <li>Click <strong>"Advanced"</strong> and then <strong>"Proceed anyway"</strong> to trust the certificate.</li>
+                <li>This allows the browser to connect to the server without SSL errors.</li>
+              </ul>
+            </div>
           </div>
           <div class="llmServerSettings config-item">
               <label for="llmApiKey">LLM Server API Key:</label>

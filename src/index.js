@@ -496,7 +496,7 @@ async function llmApiCall(prompt) {
             }, body: JSON.stringify({
                 model: config.LLM_MODEL, messages: [{
                     role: "user", content: prompt,
-                },], temperature: 0.7, max_tokens: 800,
+                },], temperature: 0.7, max_tokens: 2048,
             }),
         });
 
@@ -703,7 +703,7 @@ document
 
             html += `<div class="accordion-item">
                 <h2 class="accordion-header">
-                  <buttonn class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                     data-bs-target="#historyAccordian${index}" aria-expanded="false" aria-controls="historyAccordian${index}"
                   >${dateTime}</button>
                 </h2>

@@ -20,6 +20,7 @@ let apiCounter = 0;
 let speechToText = '';
 
 let audioDeviceId = null;
+let lastTranscription = '';
 
 const RecorderState = {
     INITIALIZING: 'initializing',
@@ -50,6 +51,13 @@ let state = {
 };
 
 async function setState(newState, data = null) {
+    // Show/hide loading overlay based on state
+    if (newState === RecorderState.INITIALIZING || newState === RecorderState.LOADING) {
+        await sendMessage('show-loading');
+    } else if (newState === RecorderState.READY) {
+        await sendMessage('hide-loading');
+    }
+
     let newData = state.data
 
     if (data?.transcription) {
@@ -62,6 +70,11 @@ async function setState(newState, data = null) {
 
     if (data?.message) {
         newData.message = data.message;
+    }
+
+    // Always maintain pause/resume state when recording
+    if (isRecording && (newState === RecorderState.RECORDING || newState === RecorderState.REALTIME_TRANSCRIBING)) {
+        newData.isPause = isPause;
     }
 
     if (newState === RecorderState.INITIALIZING ||
@@ -79,7 +92,13 @@ async function setState(newState, data = null) {
 }
 
 async function sendState() {
-    await sendMessage('recorder-state', state);
+    await sendMessage('recorder-state', {
+        ...state,
+        data: {
+            ...state.data,
+            isPause: isPause // Ensure pause state is included
+        }
+    });
 }
 
 async function init() {
@@ -139,7 +158,7 @@ async function loadConfigData() {
 
 const llmHandler = {
     "pre-processing": (text, extra) => generateNotes(extra.text, text),
-    "notes-processing": (text, extra) => postProcessData(text, extra.facts),
+    "notes-processing": (text, extra) => postProcessData(text, extra.facts, extra.text),
     "post-processing": (text, extra) => showGeneratedNotes(text),
 };
 
@@ -370,22 +389,17 @@ async function pauseRecording() {
 
 async function resumeRecording() {
     if (!isPause) {
-        await setState(RecorderState.ERROR, {
-            message: "Called resumeRecording while not paused."
-        });
-        throw new Error('Called resumeRecording while not paused.');
+        // Just return instead of throwing error
+        return;
     }
 
     mediaRecorder.resume();
     isPause = false;
 
-    if (config.REALTIME) {
-        await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
-        });
-    } else {
-        await setState(RecorderState.RECORDING);
-    }
+    // Always set state to RECORDING when resuming, even in realtime mode
+    await setState(RecorderState.RECORDING, {
+        transcription: speechToText
+    });
 }
 
 async function transcribeAudio() {
@@ -470,10 +484,12 @@ function hideLoader() {
 async function updateGUI(text) {
     speechToText += text;
     speechToText = speechToText.trim();
+    lastTranscription = speechToText; // Store last transcription
 
     if (config.REALTIME && isRecording) {
         await setState(RecorderState.REALTIME_TRANSCRIBING, {
-            transcription: speechToText
+            transcription: speechToText,
+            isPause: isPause // Include pause state in realtime updates
         });
     } else {
         await setState(RecorderState.TRANSCRIPTION_COMPLETE, {
@@ -503,7 +519,7 @@ async function llmApiCall(prompt) {
                     },
                 ],
                 temperature: 0.7,
-                max_tokens: 800,
+                max_tokens: 2048,
             }),
         });
 
@@ -610,7 +626,7 @@ async function generateNotes(text, facts) {
     try {
         let notes = await llmApiCall(prompt);
 
-        await postProcessData(notes, facts);
+        await postProcessData(notes, facts, text);
     } catch (error) {
         await setState(RecorderState.ERROR, {
             message: "Unable to generate notes."
@@ -618,7 +634,7 @@ async function generateNotes(text, facts) {
     }
 }
 
-async function postProcessData(text, facts) {
+async function postProcessData(text, facts, originalTranscription) {
     logger.log("post processing notes");
     let notes = text;
     if (config.POST_PROCESSING) {
@@ -641,7 +657,7 @@ async function postProcessData(text, facts) {
                     message: postProcessingPrompt,
                     type: "post-processing",
                     extra: {
-                        text: text,
+                        text: originalTranscription,
                         facts: facts,
                     },
                 },
@@ -658,14 +674,14 @@ async function postProcessData(text, facts) {
         }
     }
 
-    await showGeneratedNotes(notes);
+    await showGeneratedNotes(notes, originalTranscription);
 }
 
-async function showGeneratedNotes(notes) {
+async function showGeneratedNotes(notes, transcription) {
     await setState(RecorderState.COMPLETE, {
         notes: notes
     });
-    sendMessage('save-notes', notes, 'background');
+    sendMessage('save-notes', { note: notes, transcription: transcription }, 'background');
 }
 
 function getAudioDeviceList() {
@@ -702,6 +718,12 @@ function getAudioDeviceList() {
 chrome.runtime.onMessage.addListener(async (message) => {
     if (message.target === 'offscreen') {
         switch (message.type) {
+            case 'get-recording-state':
+                return Promise.resolve({
+                    isRecording: isRecording,
+                    isPaused: isPause,
+                    transcription: speechToText
+                });
             case 'start-recording':
                 startRecording();
                 break;
