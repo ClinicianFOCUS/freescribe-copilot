@@ -2,20 +2,19 @@ const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
-module.exports = (env) => {
+module.exports = (env = {}) => {
     const isProduction = env.production;
 
     return {
         entry: {
-            background: "./src-v2/background.js",
-            content: ["./src-v2/content.js", "./src-v2/content.scss"],
-            options: "./src-v2/options.js",
-            welcome: "./src-v2/welcome.js",
-            offscreen: "./src-v2/offscreen.js",
-            history: "./src-v2/history.js",
-            main: "./src-v2/main.scss",
-            main2: "./src/main.scss",
-            popup: "./src-v2/popup.js",
+            background: "./src/background.js",
+            content: ["./src/content.js", "./src/content.scss"],
+            options: "./src/options.js",
+            welcome: "./src/welcome.js",
+            offscreen: "./src/offscreen.js",
+            history: "./src/history.js",
+            main: "./src/main.scss",
+            popup: "./src/popup.js",
         },
         output: {
             filename: "[name].js",
@@ -55,7 +54,7 @@ module.exports = (env) => {
             new CopyWebpackPlugin({
                 patterns: [
                     {
-                        from: "src-v2/*.html",
+                        from: "src/*.html",
                         to: "[name].html",
                     },
                     {
@@ -87,11 +86,11 @@ module.exports = (env) => {
                         to: "",
                     },
                     {
-                        from: "src-v2/worker.js",
+                        from: "src/worker.js",
                         to: "",
                     },
                     {
-                        from: "src-v2/manifest.json",
+                        from: "src/manifest.json",
                         to: "",
                     },
                 ],

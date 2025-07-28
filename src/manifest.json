@@ -5,9 +5,12 @@
   "description": "Record and play audio from tab and microphone",
   "permissions": [
     "activeTab",
-    "tabCapture",
+    "contextMenus",
+    "offscreen",
     "storage",
-    "contextMenus"
+    "scripting",
+    "tabs",
+    "notifications"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -43,5 +46,19 @@
       "suggested_key": "Alt+Shift+Comma",
       "description": "Open FreeScribe Configuration"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "*.html",
+        "*.css",
+        "*.svg",
+        "*.png"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ]
 }
