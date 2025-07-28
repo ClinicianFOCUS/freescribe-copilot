@@ -33,6 +33,11 @@
     color: #333;
 }
 </style>
+    <style>
+        .minimized-view {
+            display: none !important;
+        }
+    </style>
     <script src="jquery-3.7.1.min.js"></script>
     <script src="toastr.min.js"></script>
     <script src="bootstrap.bundle.min.js"></script>
@@ -48,7 +53,12 @@
 </div>
 <div class="popup-container">
     <div class="container fade-in">
-        <h3>Select Audio Input</h3>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Select Audio Input</h3>
+            <button id="toggleViewButton" class="btn btn-sm btn-secondary">
+                <i class="fas fa-minus"></i> Minimize
+            </button>
+        </div>
         <select id="audioInputSelect" class="mb-3"></select>
 
         <div id="volumeBar" class="mb-3">

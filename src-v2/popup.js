@@ -18,6 +18,35 @@ async function init() {
     let logger = new Logger(config);
     let loadingSpinner = new LoadingSpinner();
 
+    const toggleViewButton = document.getElementById("toggleViewButton");
+    const minimizedElements = [
+        document.getElementById("audioInputSelect"),
+        document.getElementById("volumeBar"),
+        document.getElementById("userInput"),
+        document.getElementById("generateNotesButton"),
+        document.getElementById("notes"),
+        document.getElementById("copyNotesButton"),
+        document.getElementById("toggleConfig"),
+        document.getElementById("showHistory"),
+        document.querySelector(".text-center.mt-4")
+    ];
+
+    function toggleView() {
+        const isMinimized = minimizedElements[0].classList.contains("minimized-view");
+        
+        minimizedElements.forEach(element => {
+            if (element) element.classList.toggle("minimized-view");
+        });
+
+        if (isMinimized) {
+            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i> Minimize';
+        } else {
+            toggleViewButton.innerHTML = '<i class="fas fa-expand"></i> Maximize';
+        }
+    }
+
+    toggleViewButton.addEventListener("click", toggleView);
+
     // Check current recording state
     const recordingState = await getRecordingState();
     if (recordingState.isRecording) {
