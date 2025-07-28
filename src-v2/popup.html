@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="main2.css"/>
     <link rel="stylesheet" href="fontawesome.min.css"/>
     <style>
-.loading-overlay {
+    /* Add this new style */
+    .text-muted {
+        color: #6c757d!important;
+        font-size: 0.875rem;
+    }
+    
+    .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -34,7 +40,23 @@
 }
 </style>
     <style>
+        .header-container {
+            position: relative;
+            margin-bottom: 1rem;
+            min-height: 40px; /* Ensure consistent height */
+        }
+        
+        .audio-input-header {
+            padding-right: 40px; /* Make space for the button */
+        }
+        
+        /* Keep existing minimized view styles */
         .minimized-view {
+            display: none !important;
+        }
+        
+        .minimized-view + .audio-input-header,
+        .minimized-view ~ .info-text {
             display: none !important;
         }
     </style>
@@ -53,11 +75,15 @@
 </div>
 <div class="popup-container">
     <div class="container fade-in">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Select Audio Input</h3>
-            <button id="toggleViewButton" class="btn btn-sm btn-secondary">
-                <i class="fas fa-minus"></i> Minimize
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h3 class="mb-0">FreeScribe</h3>
+            <button id="toggleViewButton" class="btn btn-sm btn-secondary" style="width: 30px; padding: 0.25rem;">
+                <i class="fas fa-minus"></i>
             </button>
+        </div>
+
+        <div class="audio-input-label mb-1">
+            <small class="text-muted">Select Audio Input</small>
         </div>
         <select id="audioInputSelect" class="mb-3"></select>
 
@@ -141,11 +167,13 @@
     <div id="progressContainer"></div>
 </div>
 
-<div class="text-center mt-4">
-    <p>
-        For more information, click
-        <a href="welcome.html" target="_blank">here</a>.
-    </p>
+<div class="info-text">
+    <div class="text-center mt-4">
+        <p>
+            For more information, click
+            <a href="welcome.html" target="_blank">here</a>.
+        </p>
+    </div>
 </div>
 <div
         class="modal fade"

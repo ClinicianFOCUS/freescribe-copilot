@@ -11,7 +11,8 @@ async function init() {
             document.getElementById("generateNotesButton"),
             document.getElementById("notes"),
             document.getElementById("copyNotesButton"),
-            document.querySelector(".show-history")
+            document.querySelector(".show-history"),
+            document.querySelector(".text-muted")
         ];
 
         function toggleView() {
@@ -22,9 +23,9 @@ async function init() {
             });
 
             if (isMinimized) {
-                toggleViewButton.innerHTML = '<i class="fas fa-minus"></i> Minimize';
+                toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
             } else {
-                toggleViewButton.innerHTML = '<i class="fas fa-expand"></i> Maximize';
+                toggleViewButton.innerHTML = '<i class="fas fa-plus"></i>';
             }
         }
 

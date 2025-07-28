@@ -26,6 +26,8 @@ async function init() {
         document.getElementById("generateNotesButton"),
         document.getElementById("notes"),
         document.getElementById("copyNotesButton"),
+        document.querySelector(".info-text"),
+        document.querySelector(".audio-input-label"),
         document.getElementById("toggleConfig"),
         document.getElementById("showHistory"),
         document.querySelector(".text-center.mt-4")
@@ -33,15 +35,15 @@ async function init() {
 
     function toggleView() {
         const isMinimized = minimizedElements[0].classList.contains("minimized-view");
-        
+            
         minimizedElements.forEach(element => {
             if (element) element.classList.toggle("minimized-view");
         });
 
         if (isMinimized) {
-            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i> Minimize';
+            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
         } else {
-            toggleViewButton.innerHTML = '<i class="fas fa-expand"></i> Maximize';
+            toggleViewButton.innerHTML = '<i class="fas fa-plus"></i>';
         }
     }
 
