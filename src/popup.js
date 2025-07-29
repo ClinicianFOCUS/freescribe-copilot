@@ -30,7 +30,8 @@ async function init() {
         document.querySelector(".audio-input-label"),
         document.getElementById("toggleConfig"),
         document.getElementById("showHistory"),
-        document.querySelector(".text-center.mt-4")
+        document.querySelector(".text-center.mt-4"),
+        document.getElementById("errorMessage")
     ];
 
     function toggleView() {
@@ -39,6 +40,11 @@ async function init() {
         minimizedElements.forEach(element => {
             if (element) element.classList.toggle("minimized-view");
         });
+
+        // Force update error message visibility
+        if (errorMessage.textContent) {
+            errorMessage.style.display = isMinimized ? "block" : "none";
+        }
 
         if (isMinimized) {
             toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
@@ -247,8 +253,9 @@ async function init() {
     }
 
     let showErrorMessage = (message) => {
+        const isMinimized = minimizedElements[0].classList.contains("minimized-view");
         errorMessage.textContent = message;
-        errorMessage.style.display = "block";
+        errorMessage.style.display = isMinimized ? "none" : "block";
     }
 
     let hideErrorMessage = () => {

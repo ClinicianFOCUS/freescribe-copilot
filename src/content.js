@@ -12,7 +12,8 @@ async function init() {
             document.getElementById("notes"),
             document.getElementById("copyNotesButton"),
             document.querySelector(".show-history"),
-            document.querySelector(".text-muted")
+            document.querySelector(".text-muted"),
+            document.getElementById("errorMessage")
         ];
 
         function toggleView() {
@@ -21,6 +22,11 @@ async function init() {
             minimizedElements.forEach(element => {
                 if (element) element.classList.toggle("minimized-view");
             });
+
+            // Force update error message visibility
+            if (errorMessage && errorMessage.textContent) {
+                errorMessage.style.display = isMinimized ? "block" : "none";
+            }
 
             if (isMinimized) {
                 toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
