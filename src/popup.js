@@ -31,7 +31,8 @@ async function init() {
         document.getElementById("toggleConfig"),
         document.getElementById("showHistory"),
         document.querySelector(".text-center.mt-4"),
-        document.getElementById("errorMessage")
+        document.getElementById("errorMessage"),
+        document.getElementById("statusIndicator")
     ];
 
     function toggleView() {
@@ -40,6 +41,9 @@ async function init() {
         minimizedElements.forEach(element => {
             if (element) element.classList.toggle("minimized-view");
         });
+
+        // Update status indicator visibility
+        statusIndicator.style.display = isMinimized ? "block" : "none";
 
         // Force update error message visibility
         if (errorMessage.textContent) {
@@ -89,6 +93,8 @@ async function init() {
     let audioInputSelect = document.getElementById("audioInputSelect");
     let volumeLevel = document.getElementById("volumeLevel");
     let errorMessage = document.getElementById("errorMessage");
+    let statusIndicator = document.getElementById("statusIndicator");
+    let statusText = document.getElementById("statusText");
 
     // Start recording
     recordButton.addEventListener("click", async () => {
@@ -265,6 +271,8 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
+            statusText.textContent = "Initializing...";
+            statusText.style.color = "#555";
             loadingSpinner.show('Initializing...');
             recordButton.disabled = true;
         },
@@ -273,10 +281,14 @@ async function init() {
             recordButton.disabled = true;
         },
         "ready": (data) => {
+            statusText.textContent = "Ready";
+            statusText.style.color = "#28a745";
             loadingSpinner.hide();
             recordButton.disabled = false;
         },
         "recording": (data) => {
+            statusText.textContent = "Recording";
+            statusText.style.color = "#dc3545";
             isRecording = true;
             userInput.value = "";
             notesElement.textContent = "";
@@ -293,6 +305,8 @@ async function init() {
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
+            statusText.textContent = "Paused";
+            statusText.style.color = "#ffc107";
             // Ensure stop button remains visible when paused in realtime mode
             recordButton.style.display = "none";
             stopButton.style.display = "inline";
