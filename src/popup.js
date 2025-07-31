@@ -42,19 +42,18 @@ async function init() {
             if (element) element.classList.toggle("minimized-view");
         });
 
-        // Update status indicator visibility
-        statusIndicator.style.display = isMinimized ? "block" : "none";
+        // Always show status indicator in minimized view
+        statusIndicator.style.display = isMinimized ? "none" : "block";
 
         // Force update error message visibility
         if (errorMessage.textContent) {
             errorMessage.style.display = isMinimized ? "block" : "none";
         }
 
-        if (isMinimized) {
-            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
-        } else {
-            toggleViewButton.innerHTML = '<i class="fas fa-plus"></i>';
-        }
+        // Update toggle button icon
+        toggleViewButton.innerHTML = isMinimized 
+            ? '<i class="fas fa-minus"></i>' 
+            : '<i class="fas fa-plus"></i>';
     }
 
     toggleViewButton.addEventListener("click", toggleView);
@@ -272,6 +271,7 @@ async function init() {
     const recordingStateHandler = {
         "initializing": (data) => {
             statusText.textContent = "Initializing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             statusText.style.color = "#555";
             loadingSpinner.show('Initializing...');
             recordButton.disabled = true;
@@ -282,12 +282,14 @@ async function init() {
         },
         "ready": (data) => {
             statusText.textContent = "Ready";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#28a745"></i>';
             statusText.style.color = "#28a745";
             loadingSpinner.hide();
             recordButton.disabled = false;
         },
         "recording": (data) => {
             statusText.textContent = "Recording";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#dc3545"></i>';
             statusText.style.color = "#dc3545";
             isRecording = true;
             userInput.value = "";
@@ -306,6 +308,7 @@ async function init() {
         },
         "paused": (data) => {
             statusText.textContent = "Paused";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#ffc107"></i>';
             statusText.style.color = "#ffc107";
             // Ensure stop button remains visible when paused in realtime mode
             recordButton.style.display = "none";
