@@ -318,19 +318,32 @@ async function init() {
             resumeButton.disabled = false;
         },
         "recording-stopped": (data) => {
+            statusText.textContent = "Transcribing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            statusText.style.color = "#555";
             audioInputSelect.disabled = false;
-            pauseButton.disabled = true;
-            stopButton.style.display = "none";
-            recordButton.style.display = "inline";
-            resumeButton.style.display = "none";
-            pauseButton.style.display = "inline";
+            // Don't modify recording control buttons
+            generateNotesButton.disabled = true;
         },
         "transcribing": (data) => {
+            statusText.textContent = "Transcribing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            statusText.style.color = "#555";
             loadingSpinner.showS2T();
+            // Don't modify button states - keep them as they were
+            generateNotesButton.disabled = true;
         },
         "transcription-complete": (data) => {
+            statusText.textContent = "Ready";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#28a745"></i>';
+            statusText.style.color = "#28a745";
             showTranscription(data.transcription);
             loadingSpinner.hideS2T();
+            // Reset buttons to default state
+            recordButton.style.display = "inline";
+            stopButton.style.display = "none";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "none";
             generateNotesButton.disabled = false;
         },
         "realtime-transcribing": (data) => {
