@@ -16,9 +16,9 @@ async function init() {
             document.getElementById("errorMessage")
         ];
 
-        function toggleView() {
+        const toggleView = () => {
             const isMinimized = minimizedElements[0].classList.contains("minimized-view");
-            
+
             minimizedElements.forEach(element => {
                 if (element) element.classList.toggle("minimized-view");
             });
@@ -33,7 +33,8 @@ async function init() {
             } else {
                 toggleViewButton.innerHTML = '<i class="fas fa-plus"></i>';
             }
-        }
+        };
+
 
         toggleViewButton.addEventListener("click", toggleView);
         const response = await fetch(chrome.runtime.getURL('/content.html'));
