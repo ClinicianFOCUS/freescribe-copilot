@@ -329,7 +329,10 @@ async function init() {
             statusText.textContent = "Transcribing...";
             document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             statusText.style.color = "#555";
-            loadingSpinner.showS2T();
+            // Only show spinner if not in minimized view
+            if (!minimizedElements[0].classList.contains("minimized-view")) {
+                loadingSpinner.showS2T();
+            }
             // Don't modify button states - keep them as they were
             generateNotesButton.disabled = true;
         },
@@ -347,7 +350,10 @@ async function init() {
             generateNotesButton.disabled = false;
         },
         "realtime-transcribing": (data) => {
-            loadingSpinner.showS2T();
+            // Only show spinner if not in minimized view
+            if (!minimizedElements[0].classList.contains("minimized-view")) {
+                loadingSpinner.showS2T();
+            }
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
             // Maintain recording controls state
