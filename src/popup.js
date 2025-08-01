@@ -35,26 +35,24 @@ async function init() {
         document.getElementById("statusIndicator")
     ];
 
-    function toggleView() {
+    const toggleView = () => {
         const isMinimized = minimizedElements[0].classList.contains("minimized-view");
-            
+
         minimizedElements.forEach(element => {
             if (element) element.classList.toggle("minimized-view");
         });
 
         // Handle loading spinner visibility
         if (isMinimized) {
-            // When switching to maximized view, show spinner if currently transcribing
             if (statusText.textContent === "Transcribing...") {
                 loadingSpinner.showS2T();
             }
         } else {
-            // When switching to minimized view, hide the spinner
             loadingSpinner.hideS2T();
         }
 
-        // Always show status indicator in minimized view
-        statusIndicator.style.display = isMinimized ? "none" : "block";
+        // Update visibility using class, not inline styles
+        statusIndicator.classList.toggle("hidden", isMinimized);
 
         // Force update error message visibility
         if (errorMessage.textContent) {
@@ -65,7 +63,7 @@ async function init() {
         toggleViewButton.innerHTML = isMinimized 
             ? '<i class="fas fa-minus"></i>' 
             : '<i class="fas fa-plus"></i>';
-    }
+    };
 
     toggleViewButton.addEventListener("click", toggleView);
 
