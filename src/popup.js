@@ -42,6 +42,17 @@ async function init() {
             if (element) element.classList.toggle("minimized-view");
         });
 
+        // Handle loading spinner visibility
+        if (isMinimized) {
+            // When switching to maximized view, show spinner if currently transcribing
+            if (statusText.textContent === "Transcribing...") {
+                loadingSpinner.showS2T();
+            }
+        } else {
+            // When switching to minimized view, hide the spinner
+            loadingSpinner.hideS2T();
+        }
+
         // Always show status indicator in minimized view
         statusIndicator.style.display = isMinimized ? "none" : "block";
 
@@ -333,7 +344,6 @@ async function init() {
             if (!minimizedElements[0].classList.contains("minimized-view")) {
                 loadingSpinner.showS2T();
             }
-            // Don't modify button states - keep them as they were
             generateNotesButton.disabled = true;
         },
         "transcription-complete": (data) => {
