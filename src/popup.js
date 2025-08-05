@@ -51,8 +51,8 @@ async function init() {
             loadingSpinner.hideS2T();
         }
 
-        // Update visibility using class, not inline styles
-        statusIndicator.classList.toggle("hidden", isMinimized);
+        // Always show status indicator in minimized view
+        statusIndicator.style.display = isMinimized ? "none" : "block";
 
         // Force update error message visibility
         if (errorMessage.textContent) {
