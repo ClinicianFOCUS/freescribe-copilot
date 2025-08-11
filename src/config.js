@@ -4,6 +4,17 @@
 // The configuration is saved in the Chrome storage API and can be accessed by the extension's background script.
 
 export const defaultConfig = {
+    // Prompt Templates
+    DEFAULT_LLM_CONTEXT_BEFORE: "AI, please transform the following conversation into a concise SOAP note. Do not assume any medical data, vital signs, or lab values. Base the note strictly on the information provided in the conversation. Ensure that the SOAP note is structured appropriately with Subjective, Objective, Assessment, and Plan sections. Strictly extract facts from the conversation. Here's the conversation:",
+    DEFAULT_LLM_CONTEXT_AFTER: "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation.",
+    PROMPT_TEMPLATES: [
+        {
+            id: "default",
+            name: "Default Template",
+            prePrompt: "AI, please transform the following conversation into a concise SOAP note. Do not assume any medical data, vital signs, or lab values. Base the note strictly on the information provided in the conversation. Ensure that the SOAP note is structured appropriately with Subjective, Objective, Assessment, and Plan sections. Strictly extract facts from the conversation. Here's the conversation:",
+            postPrompt: "Remember, the Subjective section should reflect the patient's perspective and complaints as mentioned in the conversation. The Objective section should only include observable or measurable data from the conversation. The Assessment should be a summary of your understanding and potential diagnoses, considering the conversation's content. The Plan should outline the proposed management, strictly based on the dialogue provided. Do not add any information that did not occur and do not make assumptions. Strictly extract facts from the conversation."
+        }
+    ],
     // Transcription
     TRANSCRIPTION_LOCAL: true,
     TRANSCRIPTION_LOCAL_MODELS: ["onnx-community/whisper-tiny.en", "onnx-community/whisper-base",],

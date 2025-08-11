@@ -4,6 +4,8 @@ import {isValidUrl} from "./helpers.js";
 // variables for the configuration settings
 let config;
 const customModelKey = "custom";
+let templates = [];
+let currentTemplate = null;
 
 // Function: getOptionsFromArray - Get the html options from an array of models
 // Map the array of models to an array of option elements and join them
@@ -51,6 +53,108 @@ function loadRemoteModelsOnSettingsChange() {
     if (isValidUrl(llmUrl)) {
         loadRemoteModels(llmUrl);
     }
+}
+
+// Template related functions
+function loadTemplates() {
+  templates = config.PROMPT_TEMPLATES || [];
+  updateTemplateDropdown();
+}
+
+function updateTemplateDropdown() {
+  const select = document.getElementById('promptTemplates');
+  const currentValue = select.value;
+  
+  select.innerHTML = `
+    <option value="default">Default Template</option>
+    ${templates.filter(t => t.id !== "default").map(t => 
+      `<option value="${t.id}">${t.name}</option>`
+    ).join('')}
+    <option value="add">+ Add New Template</option>
+  `;
+  
+  if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+    select.value = currentValue;
+  }
+}
+
+function showTemplateModal(template = null) {
+  const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+  const title = document.getElementById('templateModalTitle');
+  const name = document.getElementById('templateName');
+  const prePrompt = document.getElementById('templatePrePrompt');
+  const postPrompt = document.getElementById('templatePostPrompt');
+  
+  if (template) {
+    title.textContent = 'Edit Template';
+    name.value = template.name;
+    prePrompt.value = template.prePrompt;
+    postPrompt.value = template.postPrompt;
+  } else {
+    title.textContent = 'New Template';
+    name.value = '';
+    prePrompt.value = config.DEFAULT_LLM_CONTEXT_BEFORE;
+    postPrompt.value = config.DEFAULT_LLM_CONTEXT_AFTER;
+  }
+  
+  modal.show();
+}
+
+function saveTemplate() {
+  const name = document.getElementById('templateName').value.trim();
+  const prePrompt = document.getElementById('templatePrePrompt').value.trim();
+  const postPrompt = document.getElementById('templatePostPrompt').value.trim();
+  
+  if (!name) {
+    alert('Please enter a template name');
+    return;
+  }
+  
+  const template = {
+    id: currentTemplate?.id || Date.now().toString(),
+    name,
+    prePrompt,
+    postPrompt
+  };
+  
+  if (currentTemplate) {
+    const index = templates.findIndex(t => t.id === currentTemplate.id);
+    templates[index] = template;
+  } else {
+    templates.push(template);
+  }
+  
+  config.PROMPT_TEMPLATES = templates;
+  saveConfig(config).then(() => {
+    loadTemplates();
+    applyTemplate(template.id);
+    bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
+  });
+}
+
+function applyTemplate(templateId) {
+  if (templateId === 'default') {
+    document.getElementById('llmContextBefore').value = config.DEFAULT_LLM_CONTEXT_BEFORE;
+    document.getElementById('llmContextAfter').value = config.DEFAULT_LLM_CONTEXT_AFTER;
+    currentTemplate = templates.find(t => t.id === "default") || null;
+  } else if (templateId === 'add') {
+    currentTemplate = null;
+    showTemplateModal();
+    return;
+  } else {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      document.getElementById('llmContextBefore').value = template.prePrompt;
+      document.getElementById('llmContextAfter').value = template.postPrompt;
+      currentTemplate = template;
+    }
+  }
+  
+  // Update edit/delete buttons
+  const editBtn = document.getElementById('editTemplate');
+  const deleteBtn = document.getElementById('deleteTemplate');
+  editBtn.disabled = !currentTemplate || currentTemplate.id === "default";
+  deleteBtn.disabled = !currentTemplate || currentTemplate.id === "default";
 }
 
 // Function: showConfig - Show the configuration settings on the options page based on the saved configuration
@@ -317,6 +421,32 @@ document.addEventListener("DOMContentLoaded", async function (event) {
 
     // Load the configuration settings
     config = await loadConfig();
+    
+    // Initialize templates
+    loadTemplates();
+    applyTemplate('default');
+
+    // Template event listeners
+    document.getElementById('promptTemplates').addEventListener('change', (e) => {
+      applyTemplate(e.target.value);
+    });
+
+    document.getElementById('editTemplate').addEventListener('click', () => {
+      if (currentTemplate) showTemplateModal(currentTemplate);
+    });
+
+    document.getElementById('deleteTemplate').addEventListener('click', () => {
+      if (currentTemplate && currentTemplate.id !== "default" && confirm(`Delete template "${currentTemplate.name}"?`)) {
+        templates = templates.filter(t => t.id !== currentTemplate.id);
+        config.PROMPT_TEMPLATES = templates;
+        saveConfig(config).then(() => {
+          loadTemplates();
+          applyTemplate('default');
+        });
+      }
+    });
+
+    document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
 
     // Show the configuration settings on the options page
     showConfig();
