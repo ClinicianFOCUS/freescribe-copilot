@@ -18,29 +18,58 @@ async function init() {
     let logger = new Logger(config);
     let loadingSpinner = new LoadingSpinner();
 
+    // Move DOM element declarations to the top
+    let recordButton = document.getElementById("recordButton");
+    let stopButton = document.getElementById("stopButton");
+    let pauseButton = document.getElementById("pauseButton");
+    let resumeButton = document.getElementById("resumeButton");
+    let userInput = document.getElementById("userInput");
+    let generateNotesButton = document.getElementById("generateNotesButton");
+    let notesElement = document.getElementById("notes");
+    let copyNotesButton = document.getElementById("copyNotesButton");
+    let openPage = document.getElementsByClassName("openPage");
+    let audioInputSelect = document.getElementById("audioInputSelect");
+    let volumeLevel = document.getElementById("volumeLevel");
+    let errorMessage = document.getElementById("errorMessage");
+    let statusIndicator = document.getElementById("statusIndicator");
+    let statusText = document.getElementById("statusText");
+
     const toggleViewButton = document.getElementById("toggleViewButton");
     const minimizedElements = [
-        document.getElementById("audioInputSelect"),
+        audioInputSelect,
         document.getElementById("volumeBar"),
-        document.getElementById("userInput"),
-        document.getElementById("generateNotesButton"),
-        document.getElementById("notes"),
-        document.getElementById("copyNotesButton"),
+        userInput,
+        generateNotesButton,
+        notesElement,
+        copyNotesButton,
         document.querySelector(".info-text"),
         document.querySelector(".audio-input-label"),
         document.getElementById("toggleConfig"),
         document.getElementById("showHistory"),
         document.querySelector(".text-center.mt-4"),
-        document.getElementById("errorMessage"),
-        document.getElementById("statusIndicator")
+        errorMessage,
+        statusIndicator
     ];
 
-    const toggleView = () => {
+    // Add these functions near the top of your init() function
+    const saveMinimizeState = async (isMinimized) => {
+        await chrome.storage.local.set({ 'popupMinimized': isMinimized });
+    };
+
+    const loadMinimizeState = async () => {
+        const result = await chrome.storage.local.get(['popupMinimized']);
+        return result.popupMinimized || false;
+    };
+
+    const toggleView = async () => {
         const isMinimized = minimizedElements[0].classList.contains("minimized-view");
 
         minimizedElements.forEach(element => {
             if (element) element.classList.toggle("minimized-view");
         });
+
+        // Save the new state
+        await saveMinimizeState(!isMinimized);
 
         // Handle loading spinner visibility
         if (isMinimized) {
@@ -67,6 +96,30 @@ async function init() {
 
     toggleViewButton.addEventListener("click", toggleView);
 
+    // Restore minimize state when popup opens
+    const restoreMinimizeState = async () => {
+        const isMinimized = await loadMinimizeState();
+        if (isMinimized) {
+            // Apply minimized state without saving (since we're just restoring)
+            minimizedElements.forEach(element => {
+                if (element) element.classList.add("minimized-view");
+            });
+
+            // Update UI accordingly
+            loadingSpinner.hideS2T();
+            statusIndicator.style.display = "none";
+            
+            if (errorMessage.textContent) {
+                errorMessage.style.display = "block";
+            }
+
+            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
+        }
+    };
+
+    // Call the restore function
+    await restoreMinimizeState();
+
     // Check current recording state
     const recordingState = await getRecordingState();
     if (recordingState.isRecording) {
@@ -89,20 +142,8 @@ async function init() {
   
     let isRecording = false;
 
-    let recordButton = document.getElementById("recordButton");
-    let stopButton = document.getElementById("stopButton");
-    let pauseButton = document.getElementById("pauseButton");
-    let resumeButton = document.getElementById("resumeButton");
-    let userInput = document.getElementById("userInput");
-    let generateNotesButton = document.getElementById("generateNotesButton");
-    let notesElement = document.getElementById("notes");
-    let copyNotesButton = document.getElementById("copyNotesButton");
-    let openPage = document.getElementsByClassName("openPage");
-    let audioInputSelect = document.getElementById("audioInputSelect");
-    let volumeLevel = document.getElementById("volumeLevel");
-    let errorMessage = document.getElementById("errorMessage");
-    let statusIndicator = document.getElementById("statusIndicator");
-    let statusText = document.getElementById("statusText");
+    // Remove the duplicate variable declarations that were here before
+    // ...existing code...
 
     // Start recording
     recordButton.addEventListener("click", async () => {
@@ -194,7 +235,7 @@ async function init() {
         navigator.mediaDevices
             .getUserMedia(constraints)
             .then((stream) => {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const audioContext = new (window.AudioContext || window.webkit.AudioContext)();
                 const analyser = audioContext.createAnalyser();
                 const microphone = audioContext.createMediaStreamSource(stream);
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -466,5 +507,6 @@ async function init() {
     getAudioDevices();
 }
 
+// Add this at the end of your file
 init();
 
