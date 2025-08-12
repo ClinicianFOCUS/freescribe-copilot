@@ -508,6 +508,5 @@ async function init() {
     getAudioDevices();
 }
 
-// Add this at the end of your file
 init();
 
