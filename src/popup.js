@@ -37,7 +37,7 @@ async function init() {
     const toggleViewButton = document.getElementById("toggleViewButton");
     const minimizedElements = [
         audioInputSelect,
-        document.getElementById("volumeBar"),
+        // document.getElementById("volumeBar"), // Remove this line to keep volume bar visible
         userInput,
         generateNotesButton,
         notesElement,
@@ -107,7 +107,8 @@ async function init() {
 
             // Update UI accordingly
             loadingSpinner.hideS2T();
-            statusIndicator.style.display = "none";
+            // Don't hide statusIndicator - it should remain visible in minimized view
+            // statusIndicator.style.display = "none"; // Remove this line
             
             if (errorMessage.textContent) {
                 errorMessage.style.display = "block";
