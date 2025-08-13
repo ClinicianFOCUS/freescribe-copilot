@@ -45,13 +45,16 @@
   border-radius: 0.2rem;
 }
 
-.w-75 {
-  width: 75% !important;
+.w-100 {
+  width: 100% !important;
 }
 
-.mx-auto {
-  margin-left: auto !important;
-  margin-right: auto !important;
+/* Add this to ensure consistent widths */
+.textarea-container,
+.config-item,
+button#generateNotesButton {
+  width: 100%;
+  max-width: 100%;
 }
 </style>
     <script src="jquery-3.7.1.min.js"></script>
@@ -122,9 +125,8 @@
             </div>
         </div>
 
-        <div class="config-item mb-2 text-center">
-          <!-- <label for="popupPromptTemplates" class="small">Prompts:</label> -->
-          <select id="popupPromptTemplates" class="form-select form-select-sm w-75 mx-auto">
+        <div class="config-item mb-2">
+          <select id="popupPromptTemplates" class="form-select form-select-sm w-100">
             <option value="default">Default Prompt</option>
           </select>
         </div>
