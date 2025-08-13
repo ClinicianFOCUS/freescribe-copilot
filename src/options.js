@@ -119,7 +119,9 @@ function saveTemplate() {
   
   if (currentTemplate) {
     const index = templates.findIndex(t => t.id === currentTemplate.id);
-    templates[index] = template;
+    if (index !== -1){
+        templates[index] = template;
+    }
   } else {
     templates.push(template);
   }
