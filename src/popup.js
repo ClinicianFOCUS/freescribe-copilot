@@ -222,7 +222,7 @@ async function init() {
         navigator.mediaDevices
             .getUserMedia(constraints)
             .then((stream) => {
-                const audioContext = new (window.AudioContext || window.webkit.AudioContext)();
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 const analyser = audioContext.createAnalyser();
                 const microphone = audioContext.createMediaStreamSource(stream);
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
