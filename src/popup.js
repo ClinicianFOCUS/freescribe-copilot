@@ -100,21 +100,7 @@ async function init() {
     const restoreMinimizeState = async () => {
         const isMinimized = await loadMinimizeState();
         if (isMinimized) {
-            // Apply minimized state without saving (since we're just restoring)
-            minimizedElements.forEach(element => {
-                if (element) element.classList.add("minimized-view");
-            });
-
-            // Update UI accordingly
-            loadingSpinner.hideS2T();
-            // Don't hide statusIndicator - it should remain visible in minimized view
-            // statusIndicator.style.display = "none"; // Remove this line
-            
-            if (errorMessage.textContent) {
-                errorMessage.style.display = "block";
-            }
-
-            toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
+            toggleView(); // Toggle view to apply minimized state
         }
     };
 
