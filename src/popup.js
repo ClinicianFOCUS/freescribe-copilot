@@ -22,7 +22,7 @@ function updateTemplateDropdown() {
   const currentValue = select.value;
   
   select.innerHTML = `
-    <option value="default">Default Template</option>
+    <option value="default">Default Prompt</option>
     ${templates.filter(t => t.id !== "default").map(t => 
       `<option value="${t.id}">${t.name}</option>`
     ).join('')}
