@@ -42,15 +42,19 @@ function applyTemplate(templateId) {
         prePrompt: config.DEFAULT_LLM_CONTEXT_BEFORE,
         postPrompt: config.DEFAULT_LLM_CONTEXT_AFTER 
       }
-    : templates.find(t => t.id === templateId);
+    : templates.find(t => t.id === templateId)
+   || { 
+        prePrompt: config.DEFAULT_LLM_CONTEXT_BEFORE,
+        postPrompt: config.DEFAULT_LLM_CONTEXT_AFTER 
+      }; 
 
-  if (template) {
+  //if (template) {
     chrome.runtime.sendMessage({
       target: 'offscreen',
       type: 'update-template',
       template: template
     });
-  }
+  //}
 }
 
 async function init() {
