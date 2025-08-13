@@ -605,8 +605,12 @@ async function generateNotes(text, facts) {
     }
 
     // Use current template if available, otherwise fall back to config
-    const prePrompt = currentTemplate?.prePrompt || config.LLM_CONTEXT_BEFORE;
-    const postPrompt = currentTemplate?.postPrompt || config.LLM_CONTEXT_AFTER;
+    let prePrompt = currentTemplate?.prePrompt || config.LLM_CONTEXT_BEFORE;
+    let postPrompt = currentTemplate?.postPrompt || config.LLM_CONTEXT_AFTER;
+    
+    // Trim and sanitize template values
+    prePrompt = prePrompt.trim().replace(/\s+/g, ' ').replace(/[\x00-\x1F\x7F]/g, '');
+    postPrompt = postPrompt.trim().replace(/\s+/g, ' ').replace(/[\x00-\x1F\x7F]/g, '');
 
     const prompt = `${prePrompt} ${promptText} ${postPrompt}`;
 
