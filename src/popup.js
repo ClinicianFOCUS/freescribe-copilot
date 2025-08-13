@@ -13,10 +13,54 @@ async function getRecordingState() {
     });
 }
 
+let config;
+let templates = [];
+let currentTemplate = null;
+
+function updateTemplateDropdown() {
+  const select = document.getElementById('popupPromptTemplates');
+  const currentValue = select.value;
+  
+  select.innerHTML = `
+    <option value="default">Default Template</option>
+    ${templates.filter(t => t.id !== "default").map(t => 
+      `<option value="${t.id}">${t.name}</option>`
+    ).join('')}
+  `;
+  
+  if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
+    select.value = currentValue;
+  }
+}
+
+function applyTemplate(templateId) {
+  const template = templateId === 'default' 
+    ? { 
+        prePrompt: config.DEFAULT_LLM_CONTEXT_BEFORE,
+        postPrompt: config.DEFAULT_LLM_CONTEXT_AFTER 
+      }
+    : templates.find(t => t.id === templateId);
+
+  if (template) {
+    config.LLM_CONTEXT_BEFORE = template.prePrompt;
+    config.LLM_CONTEXT_AFTER = template.postPrompt;
+    currentTemplate = template;
+  }
+}
+
 async function init() {
-    let config = await loadConfig();
+    config = await loadConfig();
+    templates = config.PROMPT_TEMPLATES || [];
     let logger = new Logger(config);
     let loadingSpinner = new LoadingSpinner();
+
+    // Update template dropdown
+    updateTemplateDropdown();
+    
+    // Add event listener for template selection
+    document.getElementById('popupPromptTemplates').addEventListener('change', (e) => {
+      applyTemplate(e.target.value);
+    });
 
     // Check current recording state
     const recordingState = await getRecordingState();

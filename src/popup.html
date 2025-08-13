@@ -32,6 +32,27 @@
     font-size: 1.2rem;
     color: #333;
 }
+
+.small {
+  font-size: 0.875rem;
+}
+
+.form-select-sm {
+  height: calc(1.5em + 0.5rem + 2px);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.2rem;
+}
+
+.w-75 {
+  width: 75% !important;
+}
+
+.mx-auto {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
 </style>
     <script src="jquery-3.7.1.min.js"></script>
     <script src="toastr.min.js"></script>
@@ -99,6 +120,13 @@
                     <span class="sr-only">Loading...</span>
                 </div>
             </div>
+        </div>
+
+        <div class="config-item mb-2 text-center">
+          <!-- <label for="popupPromptTemplates" class="small">Prompts:</label> -->
+          <select id="popupPromptTemplates" class="form-select form-select-sm w-75 mx-auto">
+            <option value="default">Default Template</option>
+          </select>
         </div>
 
         <button id="generateNotesButton" class="mb-3">
