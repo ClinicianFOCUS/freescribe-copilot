@@ -3,6 +3,7 @@ import {SilenceDetector} from "./silenceDetector";
 import {sanitizeInput} from "./helpers";
 
 let config;
+let currentTemplate = null;
 let mediaRecorder;
 let audioChunks = [];
 let tabStream;
@@ -603,7 +604,11 @@ async function generateNotes(text, facts) {
         promptText = facts;
     }
 
-    const prompt = `${config.LLM_CONTEXT_BEFORE} ${promptText} ${config.LLM_CONTEXT_AFTER}`;
+    // Use current template if available, otherwise fall back to config
+    const prePrompt = currentTemplate?.prePrompt || config.LLM_CONTEXT_BEFORE;
+    const postPrompt = currentTemplate?.postPrompt || config.LLM_CONTEXT_AFTER;
+
+    const prompt = `${prePrompt} ${promptText} ${postPrompt}`;
 
     await setState(RecorderState.GENERATING_NOTES);
 
@@ -743,6 +748,9 @@ chrome.runtime.onMessage.addListener(async (message) => {
                 break;
             case 'set-audio-device':
                 audioDeviceId = message.data;
+                break;
+            case 'update-template':
+                currentTemplate = message.template;
                 break;
             case 'toggle-recording':
                 if (isRecording) {

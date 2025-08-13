@@ -15,7 +15,7 @@ async function getRecordingState() {
 
 let config;
 let templates = [];
-let currentTemplate = null;
+let currentTemplateId = 'default';
 
 function updateTemplateDropdown() {
   const select = document.getElementById('popupPromptTemplates');
@@ -34,6 +34,9 @@ function updateTemplateDropdown() {
 }
 
 function applyTemplate(templateId) {
+  currentTemplateId = templateId;
+  chrome.storage.local.set({ currentTemplateId });
+  
   const template = templateId === 'default' 
     ? { 
         prePrompt: config.DEFAULT_LLM_CONTEXT_BEFORE,
@@ -42,9 +45,11 @@ function applyTemplate(templateId) {
     : templates.find(t => t.id === templateId);
 
   if (template) {
-    config.LLM_CONTEXT_BEFORE = template.prePrompt;
-    config.LLM_CONTEXT_AFTER = template.postPrompt;
-    currentTemplate = template;
+    chrome.runtime.sendMessage({
+      target: 'offscreen',
+      type: 'update-template',
+      template: template
+    });
   }
 }
 
@@ -54,8 +59,16 @@ async function init() {
     let logger = new Logger(config);
     let loadingSpinner = new LoadingSpinner();
 
+    // Load saved template
+    const savedTemplate = await new Promise(resolve => {
+      chrome.storage.local.get(['currentTemplateId'], result => {
+        resolve(result.currentTemplateId || 'default');
+      });
+    });
+    
     // Update template dropdown
     updateTemplateDropdown();
+    applyTemplate(savedTemplate);
     
     // Add event listener for template selection
     document.getElementById('popupPromptTemplates').addEventListener('change', (e) => {
