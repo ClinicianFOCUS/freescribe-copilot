@@ -20,14 +20,27 @@ let currentTemplateId = 'default';
 function updateTemplateDropdown() {
   const select = document.getElementById('popupPromptTemplates');
   const currentValue = select.value;
-  
-  select.innerHTML = `
-    <option value="default">Default Prompt</option>
-    ${templates.filter(t => t.id !== "default").map(t => 
-      `<option value="${t.id}">${t.name}</option>`
-    ).join('')}
-  `;
-  
+
+  // Clear existing options
+  select.innerHTML = '';
+
+  // Add default option
+  const defaultOption = document.createElement('option');
+  defaultOption.value = 'default';
+  defaultOption.textContent = 'Default Prompt';
+  select.appendChild(defaultOption);
+
+  // Add other templates safely
+  templates
+    .filter(t => t.id !== 'default')
+    .forEach(t => {
+      const option = document.createElement('option');
+      option.value = t.id;          
+      option.textContent = t.name;  
+      select.appendChild(option);
+    });
+
+  // Restore the previously selected value if still available
   if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
     select.value = currentValue;
   }
