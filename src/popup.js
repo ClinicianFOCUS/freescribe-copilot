@@ -37,7 +37,6 @@ async function init() {
     const toggleViewButton = document.getElementById("toggleViewButton");
     const minimizedElements = [
         audioInputSelect,
-        // document.getElementById("volumeBar"), // Remove this line to keep volume bar visible
         userInput,
         generateNotesButton,
         notesElement,
@@ -128,9 +127,6 @@ async function init() {
     }
   
     let isRecording = false;
-
-    // Remove the duplicate variable declarations that were here before
-    // ...existing code...
 
     // Start recording
     recordButton.addEventListener("click", async () => {
