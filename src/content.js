@@ -3,6 +3,40 @@ import {Logger} from "./logger.js";
 
 async function init() {
     if (!document.getElementById("free-scribe-extension")) {
+        const toggleViewButton = document.getElementById("toggleViewButton");
+        const minimizedElements = [
+            document.getElementById("audioDeviceSelect"),
+            document.getElementById("audioDeviceSelectRefresh"),
+            document.getElementById("userInput"),
+            document.getElementById("generateNotesButton"),
+            document.getElementById("notes"),
+            document.getElementById("copyNotesButton"),
+            document.querySelector(".show-history"),
+            document.querySelector(".text-muted"),
+            document.getElementById("errorMessage")
+        ];
+
+        const toggleView = () => {
+            const isMinimized = minimizedElements[0].classList.contains("minimized-view");
+
+            minimizedElements.forEach(element => {
+                if (element) element.classList.toggle("minimized-view");
+            });
+
+            // Force update error message visibility
+            if (errorMessage && errorMessage.textContent) {
+                errorMessage.style.display = isMinimized ? "block" : "none";
+            }
+
+            if (isMinimized) {
+                toggleViewButton.innerHTML = '<i class="fas fa-minus"></i>';
+            } else {
+                toggleViewButton.innerHTML = '<i class="fas fa-plus"></i>';
+            }
+        };
+
+
+        toggleViewButton.addEventListener("click", toggleView);
         const response = await fetch(chrome.runtime.getURL('/content.html'));
 
         if (!response.ok) {

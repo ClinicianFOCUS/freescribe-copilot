@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="main.css"/>
     <link rel="stylesheet" href="fontawesome.min.css"/>
     <style>
-.loading-overlay {
+    /* Add this new style */
+    .text-muted {
+        color: #6c757d!important;
+        font-size: 0.875rem;
+    }
+    
+    .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -33,6 +39,31 @@
     color: #333;
 }
 </style>
+    <style>
+        .minimized-view #errorMessage {
+            display: none !important;
+        }
+        
+        .header-container {
+            position: relative;
+            margin-bottom: 1rem;
+            min-height: 40px; /* Ensure consistent height */
+        }
+        
+        .audio-input-header {
+            padding-right: 40px; /* Make space for the button */
+        }
+        
+        /* Keep existing minimized view styles */
+        .minimized-view {
+            display: none !important;
+        }
+        
+        .minimized-view + .audio-input-header,
+        .minimized-view ~ .info-text {
+            display: none !important;
+        }
+    </style>
     <script src="jquery-3.7.1.min.js"></script>
     <script src="toastr.min.js"></script>
     <script src="bootstrap.bundle.min.js"></script>
@@ -48,7 +79,16 @@
 </div>
 <div class="popup-container">
     <div class="container fade-in">
-        <h3>Select Audio Input</h3>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h3 class="mb-0">FreeScribe</h3>
+            <button id="toggleViewButton" class="btn btn-sm btn-secondary" style="width: 30px; padding: 0.25rem;">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+
+        <div class="audio-input-label mb-1">
+            <small class="text-muted">Select Audio Input</small>
+        </div>
         <select id="audioInputSelect" class="mb-3"></select>
 
         <div id="volumeBar" class="mb-3">
@@ -86,6 +126,13 @@
         </div>
 
         <div id="errorMessage" class="alert alert-danger" role="alert" style="display: none;"></div>
+
+        <div id="statusIndicator" class="minimized-view text-center mb-2" style="display: none;">
+            <small class="text-muted">
+                <span id="statusIcon" class="me-1"></span>
+                <span id="statusText">Ready</span>
+            </small>
+        </div>
 
         <div class="textarea-container mb-3">
           <textarea
@@ -131,11 +178,13 @@
     <div id="progressContainer"></div>
 </div>
 
-<div class="text-center mt-4">
-    <p>
-        For more information, click
-        <a href="welcome.html" target="_blank">here</a>.
-    </p>
+<div class="info-text">
+    <div class="text-center mt-4">
+        <p>
+            For more information, click
+            <a href="welcome.html" target="_blank">here</a>.
+        </p>
+    </div>
 </div>
 <div
         class="modal fade"

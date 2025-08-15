@@ -18,6 +18,94 @@ async function init() {
     let logger = new Logger(config);
     let loadingSpinner = new LoadingSpinner();
 
+    // Move DOM element declarations to the top
+    let recordButton = document.getElementById("recordButton");
+    let stopButton = document.getElementById("stopButton");
+    let pauseButton = document.getElementById("pauseButton");
+    let resumeButton = document.getElementById("resumeButton");
+    let userInput = document.getElementById("userInput");
+    let generateNotesButton = document.getElementById("generateNotesButton");
+    let notesElement = document.getElementById("notes");
+    let copyNotesButton = document.getElementById("copyNotesButton");
+    let openPage = document.getElementsByClassName("openPage");
+    let audioInputSelect = document.getElementById("audioInputSelect");
+    let volumeLevel = document.getElementById("volumeLevel");
+    let errorMessage = document.getElementById("errorMessage");
+    let statusIndicator = document.getElementById("statusIndicator");
+    let statusText = document.getElementById("statusText");
+
+    const toggleViewButton = document.getElementById("toggleViewButton");
+    const minimizedElements = [
+        audioInputSelect,
+        userInput,
+        generateNotesButton,
+        notesElement,
+        copyNotesButton,
+        document.querySelector(".info-text"),
+        document.querySelector(".audio-input-label"),
+        document.getElementById("toggleConfig"),
+        document.getElementById("showHistory"),
+        document.querySelector(".text-center.mt-4"),
+        errorMessage,
+        statusIndicator
+    ];
+
+    // Add these functions near the top of your init() function
+    const saveMinimizeState = async (isMinimized) => {
+        await chrome.storage.local.set({ 'popupMinimized': isMinimized });
+    };
+
+    const loadMinimizeState = async () => {
+        const result = await chrome.storage.local.get(['popupMinimized']);
+        return result.popupMinimized || false;
+    };
+
+    const toggleView = async () => {
+        const isMinimized = minimizedElements[0].classList.contains("minimized-view");
+
+        minimizedElements.forEach(element => {
+            if (element) element.classList.toggle("minimized-view");
+        });
+
+        // Save the new state
+        await saveMinimizeState(!isMinimized);
+
+        // Handle loading spinner visibility
+        if (isMinimized) {
+            if (statusText.textContent === "Transcribing...") {
+                loadingSpinner.showS2T();
+            }
+        } else {
+            loadingSpinner.hideS2T();
+        }
+
+        // Always show status indicator in minimized view
+        statusIndicator.style.display = isMinimized ? "none" : "block";
+
+        // Force update error message visibility
+        if (errorMessage.textContent) {
+            errorMessage.style.display = isMinimized ? "block" : "none";
+        }
+
+        // Update toggle button icon
+        toggleViewButton.innerHTML = isMinimized 
+            ? '<i class="fas fa-minus"></i>' 
+            : '<i class="fas fa-plus"></i>';
+    };
+
+    toggleViewButton.addEventListener("click", toggleView);
+
+    // Restore minimize state when popup opens
+    const restoreMinimizeState = async () => {
+        const isMinimized = await loadMinimizeState();
+        if (isMinimized) {
+            toggleView(); // Toggle view to apply minimized state
+        }
+    };
+
+    // Call the restore function
+    await restoreMinimizeState();
+
     // Check current recording state
     const recordingState = await getRecordingState();
     if (recordingState.isRecording) {
@@ -39,19 +127,6 @@ async function init() {
     }
   
     let isRecording = false;
-
-    let recordButton = document.getElementById("recordButton");
-    let stopButton = document.getElementById("stopButton");
-    let pauseButton = document.getElementById("pauseButton");
-    let resumeButton = document.getElementById("resumeButton");
-    let userInput = document.getElementById("userInput");
-    let generateNotesButton = document.getElementById("generateNotesButton");
-    let notesElement = document.getElementById("notes");
-    let copyNotesButton = document.getElementById("copyNotesButton");
-    let openPage = document.getElementsByClassName("openPage");
-    let audioInputSelect = document.getElementById("audioInputSelect");
-    let volumeLevel = document.getElementById("volumeLevel");
-    let errorMessage = document.getElementById("errorMessage");
 
     // Start recording
     recordButton.addEventListener("click", async () => {
@@ -216,8 +291,9 @@ async function init() {
     }
 
     let showErrorMessage = (message) => {
+        const isMinimized = minimizedElements[0].classList.contains("minimized-view");
         errorMessage.textContent = message;
-        errorMessage.style.display = "block";
+        errorMessage.style.display = isMinimized ? "none" : "block";
     }
 
     let hideErrorMessage = () => {
@@ -227,6 +303,9 @@ async function init() {
 
     const recordingStateHandler = {
         "initializing": (data) => {
+            statusText.textContent = "Initializing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            statusText.style.color = "#555";
             loadingSpinner.show('Initializing...');
             recordButton.disabled = true;
         },
@@ -235,10 +314,16 @@ async function init() {
             recordButton.disabled = true;
         },
         "ready": (data) => {
+            statusText.textContent = "Ready";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#28a745"></i>';
+            statusText.style.color = "#28a745";
             loadingSpinner.hide();
             recordButton.disabled = false;
         },
         "recording": (data) => {
+            statusText.textContent = "Recording";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#dc3545"></i>';
+            statusText.style.color = "#dc3545";
             isRecording = true;
             userInput.value = "";
             notesElement.textContent = "";
@@ -255,6 +340,9 @@ async function init() {
             generateNotesButton.disabled = true;
         },
         "paused": (data) => {
+            statusText.textContent = "Paused";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#ffc107"></i>';
+            statusText.style.color = "#ffc107";
             // Ensure stop button remains visible when paused in realtime mode
             recordButton.style.display = "none";
             stopButton.style.display = "inline";
@@ -263,23 +351,41 @@ async function init() {
             resumeButton.disabled = false;
         },
         "recording-stopped": (data) => {
+            statusText.textContent = "Transcribing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            statusText.style.color = "#555";
             audioInputSelect.disabled = false;
-            pauseButton.disabled = true;
-            stopButton.style.display = "none";
-            recordButton.style.display = "inline";
-            resumeButton.style.display = "none";
-            pauseButton.style.display = "inline";
+            // Don't modify recording control buttons
+            generateNotesButton.disabled = true;
         },
         "transcribing": (data) => {
-            loadingSpinner.showS2T();
+            statusText.textContent = "Transcribing...";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            statusText.style.color = "#555";
+            // Only show spinner if not in minimized view
+            if (!minimizedElements[0].classList.contains("minimized-view")) {
+                loadingSpinner.showS2T();
+            }
+            generateNotesButton.disabled = true;
         },
         "transcription-complete": (data) => {
+            statusText.textContent = "Ready";
+            document.getElementById("statusIcon").innerHTML = '<i class="fas fa-circle" style="color:#28a745"></i>';
+            statusText.style.color = "#28a745";
             showTranscription(data.transcription);
             loadingSpinner.hideS2T();
+            // Reset buttons to default state
+            recordButton.style.display = "inline";
+            stopButton.style.display = "none";
+            pauseButton.style.display = "none";
+            resumeButton.style.display = "none";
             generateNotesButton.disabled = false;
         },
         "realtime-transcribing": (data) => {
-            loadingSpinner.showS2T();
+            // Only show spinner if not in minimized view
+            if (!minimizedElements[0].classList.contains("minimized-view")) {
+                loadingSpinner.showS2T();
+            }
             showTranscription(data.transcription);
             generateNotesButton.disabled = true;
             // Maintain recording controls state
