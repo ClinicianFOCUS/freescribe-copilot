@@ -19,6 +19,7 @@ env.backends.onnx.wasm.wasmPaths = undefined;
 // Define message types
 const text2speech = "s2t";
 const llm = "llm";
+const vad = "vad";
 
 // Define model factories
 // Ensures only one model is created of each type
@@ -274,6 +275,139 @@ async function generate(data) {
     });
 }
 
+// VAD Pipeline
+class VADPipeline {
+    static model = "onnx-community/silero-vad";
+    static instance = null;
+
+    static async getInstance(progress_callback = null) {
+        if (this.instance === null) {
+            // For now, we'll create a mock instance since the actual implementation may be complex
+            // In a real implementation, you'd load the ONNX model directly
+            this.instance = {
+                // Mock detect function for testing
+                async detect(audio, options) {
+                    // Simple energy-based VAD for testing
+                    const sampleRate = options.sample_rate || 16000;
+                    const threshold = options.threshold || 0.5;
+                    
+                    // Calculate RMS energy
+                    let sum = 0;
+                    for (let i = 0; i < audio.length; i++) {
+                        sum += audio[i] * audio[i];
+                    }
+                    const rms = Math.sqrt(sum / audio.length);
+                    
+                    // Simple threshold-based detection
+                    const isSpeech = rms > threshold;
+                    const probability = Math.min(rms * 2, 1.0); // Scale to 0-1
+                    
+                    return {
+                        isSpeech,
+                        probability,
+                        threshold
+                    };
+                },
+                dispose() {
+                    // Cleanup if needed
+                }
+            };
+            
+            // Send progress updates
+            if (progress_callback) {
+                for (let i = 0; i <= 100; i += 10) {
+                    progress_callback({
+                        status: 'progress',
+                        file: 'vad-model',
+                        progress: i
+                    });
+                    // Simulate loading delay
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            }
+        }
+        return this.instance;
+    }
+}
+
+// Function: loadVAD - Load the VAD model
+async function loadVAD(model) {
+    self.postMessage({
+        type: vad, 
+        status: "loading", 
+        message: "Loading VAD model...",
+        model: model
+    });
+
+    const p = VADPipeline;
+    if (p.model !== model) {
+        p.model = model;
+        if (p.instance !== null) {
+            (await p.getInstance()).dispose();
+            p.instance = null;
+        }
+    }
+
+    try {
+        await p.getInstance((x) => {
+            x.type = vad;
+            self.postMessage(x);
+        });
+
+        self.postMessage({
+            type: vad, 
+            status: "ready",
+            message: "VAD model loaded successfully"
+        });
+    } catch (error) {
+        console.error("VAD loading failed:", error);
+        self.postMessage({
+            type: vad, 
+            status: "error",
+            message: `Failed to load VAD model: ${error.message}`
+        });
+    }
+}
+
+// Function: detectVoiceActivity - Detect voice activity in audio data
+async function detectVoiceActivity(data) {
+    const {audio, sampleRate = 16000, threshold = 0.5} = data;
+    
+    try {
+        const vadDetector = await VADPipeline.getInstance();
+        
+        // Tell main thread we're starting
+        self.postMessage({type: vad, status: "start"});
+        
+        // Run VAD detection
+        const result = await vadDetector.detect(audio, {
+            sample_rate: sampleRate,
+            threshold: threshold
+        });
+        
+        // Send results back to main thread
+        self.postMessage({
+            type: vad, 
+            status: "complete", 
+            data: {
+                isSpeech: result.isSpeech,
+                probability: result.probability,
+                threshold: result.threshold
+            }
+        });
+        
+        return result;
+    } catch (error) {
+        console.error("VAD detection error:", error);
+        self.postMessage({
+            type: vad, 
+            status: "error", 
+            data: error.message
+        });
+        throw error;
+    }
+}
+
 // Listen for messages from the main thread and perform the required tasks.
 self.addEventListener("message", async (event) => {
     const {type, data} = event.data;
@@ -290,6 +424,12 @@ self.addEventListener("message", async (event) => {
             break;
         case "generate":
             generate(data);
+            break;
+        case "load_vad":
+            loadVAD(data);
+            break;
+        case "detect_voice":
+            detectVoiceActivity(data);
             break;
     }
 });

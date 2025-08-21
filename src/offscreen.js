@@ -714,6 +714,47 @@ function getAudioDeviceList() {
         });
 }
 
+// Add test function for VAD
+async function testVAD() {
+    try {
+        // Create test audio (silence)
+        const audioContext = new AudioContext({sampleRate: 16000});
+        const duration = 1.0; // 1 second
+        const buffer = audioContext.createBuffer(1, duration * audioContext.sampleRate, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        // Fill with silence
+        for (let i = 0; i < data.length; i++) {
+            data[i] = 0;
+        }
+        
+        // Test with silence
+        const result = await new Promise((resolve) => {
+            const handleMessage = (event) => {
+                if (event.data.type === vad && event.data.status === "complete") {
+                    worker.removeEventListener("message", handleMessage);
+                    resolve(event.data);
+                }
+            };
+            worker.addEventListener("message", handleMessage);
+            
+            worker.postMessage({
+                type: "detect_voice",
+                data: {
+                    audio: data,
+                    sampleRate: 16000,
+                    threshold: 0.3
+                }
+            });
+        });
+        
+        return result;
+    } catch (error) {
+        console.error("VAD test failed:", error);
+        throw error;
+    }
+}
+
 chrome.runtime.onMessage.addListener(async (message) => {
     if (message.target === 'offscreen') {
         switch (message.type) {
@@ -750,6 +791,14 @@ chrome.runtime.onMessage.addListener(async (message) => {
                 } else {
                     startRecording();
                 }
+                break;
+            case 'test-vad':
+                testVAD().then(result => {
+                    sendResponse(result);
+                }).catch(error => {
+                    sendResponse({error: error.message});
+                });
+                return true; // Keep the message channel open for async response
             case 'init':
                 await init();
                 break;

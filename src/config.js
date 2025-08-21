@@ -36,6 +36,11 @@ export const defaultConfig = {
     MINIMUM_WORD_COUNT_CHECK: true,
     MINIMUM_WORD_COUNT_LIMIT: 50,
     TRANSLATE_TO_ENGLISH: false,
+    // VAD
+    VAD_MODEL: "onnx-community/silero-vad",
+    VAD_THRESHOLD: 0.5,
+    VAD_MIN_SPEECH_DURATION: 250,
+    VAD_MIN_SILENCE_DURATION: 500,
 };
 
 // Function: loadConfig - Load the configuration from the Chrome storage API
