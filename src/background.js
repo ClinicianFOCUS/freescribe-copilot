@@ -201,6 +201,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 sendResponse({ history: [], success: false, error: error.message });
             }
                 return true;
+        } else if (message.type === 'update-template') {
+          chrome.runtime.sendMessage({
+            target: 'offscreen',
+            type: 'update-template',
+            template: message.template
+          });
         } else if (message.type === 'clearHistory') {    
             try {
                 notesHistory = [];
