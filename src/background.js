@@ -202,7 +202,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
                 return true;
         } else if (message.type === 'update-template') {
-          // Forward to offscreen document
           chrome.runtime.sendMessage({
             target: 'offscreen',
             type: 'update-template',
